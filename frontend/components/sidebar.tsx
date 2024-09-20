@@ -27,9 +27,9 @@ export function Sidebar() {
               <Button
                 variant="ghost"
                 className={cn(
-                  "w-full justify-start mt-1",
-                  pathname === item.href && "bg-muted/50",
-                  "hover:bg-muted/50"
+                  "w-full justify-start mt-1 text-white",
+                  pathname === item.href && "bg-muted/10",
+                  "hover:bg-muted/10 hover:text-white"
                 )}
               >
                 <item.icon className="mr-2 h-4 w-4" />

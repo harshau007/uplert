@@ -201,7 +201,7 @@ export default function IncidentPage() {
           </Badge>
         </div>
         <div className="flex space-x-2">
-          <Button variant="outline">Escalate</Button>
+          <Button variant="secondary">Escalate</Button>
           <Button variant="default">Acknowledge</Button>
         </div>
       </div>
@@ -262,7 +262,10 @@ export default function IncidentPage() {
           <CardTitle>Add Comment</CardTitle>
         </CardHeader>
         <CardContent>
-          <Textarea placeholder="Type your comment here." />
+          <Textarea
+            placeholder="Type your comment here."
+            className="border border-gray-50"
+          />
           <Button className="mt-2">Post Comment</Button>
         </CardContent>
       </Card>
