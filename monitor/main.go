@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 	"strconv"
+	"sync"
 	"time"
 
 	_ "github.com/mattn/go-sqlite3"
@@ -27,18 +28,27 @@ type MonitoringResult struct {
 	ResponseTime time.Duration `json:"response_time"`
 }
 
+var (
+	db         *sql.DB
+	monitorMap sync.Map
+)
+
 func main() {
-	db, err := setupDatabase()
+	var err error
+	db, err = setupDatabase()
 	if err != nil {
 		log.Fatalf("Failed to set up database: %v", err)
 	}
 	defer db.Close()
 
-	// Check for new data in RabbitMQ queue and process it
-	processQueueData(db)
+	// Start processing queue data in a separate goroutine
+	go processQueueData()
 
 	// Start monitoring websites from the database
-	startMonitoringFromDB(db)
+	startMonitoringFromDB()
+
+	// Keep the main goroutine running
+	select {}
 }
 
 func setupDatabase() (*sql.DB, error) {
@@ -60,46 +70,44 @@ func setupDatabase() (*sql.DB, error) {
 	return db, nil
 }
 
-func processQueueData(db *sql.DB) {
-	conn, ch := connectToRabbitMQ()
-	defer conn.Close()
-	defer ch.Close()
-
-	q, err := ch.QueueDeclare(
-		"website_monitoring_requests",
-		true,
-		false,
-		false,
-		false,
-		nil,
-	)
-	if err != nil {
-		log.Fatalf("Failed to declare queue: %v", err)
-	}
-
-	msgs, err := ch.Consume(
-		q.Name,
-		"",
-		false,
-		false,
-		false,
-		false,
-		nil,
-	)
-	if err != nil {
-		log.Fatalf("Failed to register a consumer: %v", err)
-	}
-
-	log.Println("Checking for new data in RabbitMQ queue...")
-
-	// Use a timeout to avoid blocking indefinitely if there are no messages
-	timeout := time.After(5 * time.Second)
+func processQueueData() {
 	for {
-		select {
-		case msg, ok := <-msgs:
-			if !ok {
-				return
-			}
+		conn, ch := connectToRabbitMQ()
+		defer conn.Close()
+		defer ch.Close()
+
+		q, err := ch.QueueDeclare(
+			"website_monitoring_requests",
+			true,
+			false,
+			false,
+			false,
+			nil,
+		)
+		if err != nil {
+			log.Printf("Failed to declare queue: %v", err)
+			time.Sleep(5 * time.Second)
+			continue
+		}
+
+		msgs, err := ch.Consume(
+			q.Name,
+			"",
+			false,
+			false,
+			false,
+			false,
+			nil,
+		)
+		if err != nil {
+			log.Printf("Failed to register a consumer: %v", err)
+			time.Sleep(5 * time.Second)
+			continue
+		}
+
+		log.Println("Waiting for messages in RabbitMQ queue...")
+
+		for msg := range msgs {
 			var website Website
 			if err := json.Unmarshal(msg.Body, &website); err != nil {
 				log.Printf("Failed to unmarshal message: %v", err)
@@ -114,25 +122,26 @@ func processQueueData(db *sql.DB) {
 				continue
 			}
 
-			updateOrInsertWebsite(db, website.URL, interval)
+			updateOrInsertWebsite(website.URL, interval)
 			msg.Ack(false)
-		case <-timeout:
-			log.Println("No new messages in queue. Proceeding with monitoring.")
-			return
 		}
+
+		log.Println("RabbitMQ connection closed. Reconnecting...")
+		time.Sleep(5 * time.Second)
 	}
 }
 
-func updateOrInsertWebsite(db *sql.DB, url string, interval int) {
+func updateOrInsertWebsite(url string, interval int) {
 	_, err := db.Exec("INSERT OR REPLACE INTO monitored_sites (url, interval) VALUES (?, ?)", url, interval)
 	if err != nil {
 		log.Printf("Failed to update/insert website %s: %v", url, err)
 	} else {
 		log.Printf("Updated/inserted website: %s with interval %d seconds", url, interval)
+		startMonitoringWebsite(url, interval)
 	}
 }
 
-func startMonitoringFromDB(db *sql.DB) {
+func startMonitoringFromDB() {
 	rows, err := db.Query("SELECT url, interval FROM monitored_sites")
 	if err != nil {
 		log.Fatalf("Failed to query monitored sites: %v", err)
@@ -146,11 +155,14 @@ func startMonitoringFromDB(db *sql.DB) {
 			log.Printf("Error scanning row: %v", err)
 			continue
 		}
+		startMonitoringWebsite(url, interval)
+	}
+}
+
+func startMonitoringWebsite(url string, interval int) {
+	if _, exists := monitorMap.LoadOrStore(url, true); !exists {
 		go monitorWebsite(url, interval)
 	}
-
-	// Keep the main goroutine running
-	select {}
 }
 
 func monitorWebsite(url string, interval int) {
@@ -161,14 +173,13 @@ func monitorWebsite(url string, interval int) {
 
 		var status string
 		if err != nil {
+			status = "Error: " + err.Error()
+		} else {
 			status = resp.Status
 			resp.Body.Close()
-			log.Printf("Successfully monitored %s. Status: %s, Response time: %v", url, status, responseTime)
 		}
 
-		status = resp.Status
-		resp.Body.Close()
-		log.Printf("Successfully monitored %s. Status: %s, Response time: %v", url, status, responseTime)
+		log.Printf("Monitored %s. Status: %s, Response time: %v", url, status, responseTime)
 
 		result := MonitoringResult{
 			URL:          url,

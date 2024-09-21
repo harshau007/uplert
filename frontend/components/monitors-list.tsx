@@ -1,5 +1,3 @@
-"use client";
-
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import {
@@ -10,52 +8,26 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { AlertCircle, CheckCircle, XCircle } from "lucide-react";
 import Link from "next/link";
-import { useState } from "react";
 
-type Monitor = {
-  id: string;
-  name: string;
+interface MonitoringData {
   url: string;
   status: "up" | "down" | "degraded";
-  uptime: string;
-  lastChecked: string;
-};
+  response_time: string;
+}
 
-const mockMonitors: Monitor[] = [
-  {
-    id: "1",
-    name: "Main Website",
-    url: "https://example.com",
-    status: "up",
-    uptime: "99.9%",
-    lastChecked: "2 minutes ago",
-  },
-  {
-    id: "2",
-    name: "API Endpoint",
-    url: "https://api.example.com",
-    status: "degraded",
-    uptime: "98.5%",
-    lastChecked: "5 minutes ago",
-  },
-  {
-    id: "3",
-    name: "User Dashboard",
-    url: "https://dashboard.example.com",
-    status: "down",
-    uptime: "95.0%",
-    lastChecked: "1 minute ago",
-  },
-];
+interface MonitorsListProps {
+  monitoringData: {
+    [url: string]: MonitoringData[];
+  };
+}
 
-export function MonitorsList() {
-  const [monitors, setMonitors] = useState<Monitor[]>(mockMonitors);
-
-  const handleDeleteMonitor = (id: string) => {
-    setMonitors(monitors.filter((monitor) => monitor.id !== id));
+export function MonitorsList({ monitoringData }: MonitorsListProps) {
+  const handleDeleteMonitor = (url: string) => {
+    // Implement delete functionality
+    console.log(`Delete monitor for ${url}`);
   };
 
-  const statusIcon = (status: Monitor["status"]) => {
+  const statusIcon = (status: "up" | "down" | "degraded") => {
     switch (status) {
       case "up":
         return <CheckCircle className="text-green-500" />;
@@ -70,49 +42,52 @@ export function MonitorsList() {
     <Card>
       <CardContent className="p-6">
         <div className="space-y-4">
-          {monitors.map((monitor) => (
-            <div
-              key={monitor.id}
-              className="flex items-center justify-between border-b pb-4 last:border-b-0 last:pb-0"
-            >
-              <div className="flex items-center space-x-4">
-                {statusIcon(monitor.status)}
-                <div>
-                  <Link
-                    href={`/monitors/${monitor.id}`}
-                    className="font-medium hover:underline"
-                  >
-                    {monitor.name}
-                  </Link>
-                  <p className="text-sm text-muted-foreground">{monitor.url}</p>
-                </div>
-              </div>
-              <div className="flex items-center space-x-4">
-                <div className="text-right">
-                  <p className="text-sm font-medium">
-                    Uptime: {monitor.uptime}
-                  </p>
-                  <p className="text-sm text-muted-foreground">
-                    Last checked: {monitor.lastChecked}
-                  </p>
-                </div>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="sm">
-                      •••
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem
-                      onSelect={() => handleDeleteMonitor(monitor.id)}
+          {Object.entries(monitoringData).map(([url, data]) => {
+            const latestData = data[0];
+            return (
+              <div
+                key={url}
+                className="flex items-center justify-between border-b pb-4 last:border-b-0 last:pb-0"
+              >
+                <div className="flex items-center space-x-4">
+                  {statusIcon(latestData.status)}
+                  <div>
+                    <Link
+                      href={`/monitors/${encodeURIComponent(url)}`}
+                      className="font-medium hover:underline"
                     >
-                      Delete
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
+                      {url}
+                    </Link>
+                    <p className="text-sm text-muted-foreground">{url}</p>
+                  </div>
+                </div>
+                <div className="flex items-center space-x-4">
+                  <div className="text-right">
+                    <p className="text-sm font-medium">
+                      Status: {latestData.status}
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      Response time: {latestData.response_time}
+                    </p>
+                  </div>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="sm">
+                        •••
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem
+                        onSelect={() => handleDeleteMonitor(url)}
+                      >
+                        Delete
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </CardContent>
     </Card>
