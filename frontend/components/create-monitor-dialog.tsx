@@ -12,21 +12,21 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useToast } from "@/hooks/use-toast";
+// import { useToast } from "@/hooks/use-toast";
 import { useState } from "react";
+import { toast } from "sonner";
 
 export function CreateMonitorDialog() {
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
   const [url, setUrl] = useState("");
-  const { toast } = useToast();
+  // const { toast } = useToast();
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     // Here you would typically send a request to your backend to create the monitor
     console.log("Creating monitor:", { name, url });
-    toast({
-      title: "Monitor created",
+    toast.success("Monitor created", {
       description: `Successfully created monitor for ${url}`,
     });
     setOpen(false);

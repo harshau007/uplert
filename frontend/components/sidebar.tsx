@@ -15,7 +15,7 @@ export function Sidebar() {
   const pathname = usePathname();
 
   return (
-    <div className="w-64 bg-background border-r">
+    <div className="w-64 bg-[#131315] border-r">
       <div className="p-4">
         <h1 className="flex text-2xl font-bold m-4">
           <img src="/uplert.svg" className="w-10 h-10 mr-2" />

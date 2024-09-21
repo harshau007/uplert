@@ -1,6 +1,7 @@
 "use client";
 
-import { Badge } from "@/components/ui/badge";
+import { AreaChartComponent } from "@/components/cbarts/area";
+import StatusIndicator from "@/components/statusIndicator";
 import {
   Breadcrumb,
   BreadcrumbEllipsis,
@@ -29,7 +30,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useMediaQuery } from "@/hooks/use-media-query";
-import { AlertCircle, PauseCircle, Settings } from "lucide-react";
+import { PauseCircle, SendHorizontal, Settings } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import React, { useEffect, useState } from "react";
@@ -182,22 +183,20 @@ export default function MonitorPage() {
       </Breadcrumb>
 
       <div className="flex justify-between items-center">
-        <div className="flex items-center space-x-4">
+        <div className="flex items-center space-x-2 ml-1">
           <h1 className="text-2xl font-bold">{monitor.name}</h1>
-          <Badge className={statusColor[monitor.status]}>
-            {monitor.status}
-          </Badge>
+          <StatusIndicator isActive={true} className="mt-1" />
         </div>
         <div className="flex space-x-2">
-          <Button variant="outline" size="sm">
-            <AlertCircle className="mr-2 h-4 w-4" />
+          <Button variant="outline" size="sm" className="border border-white">
+            <SendHorizontal className="mr-2 h-4 w-4" />
             Test
           </Button>
-          <Button variant="outline" size="sm">
+          <Button variant="outline" size="sm" className="border border-white">
             <PauseCircle className="mr-2 h-4 w-4" />
             Pause
           </Button>
-          <Button variant="outline" size="sm">
+          <Button variant="outline" size="sm" className="border border-white">
             <Settings className="mr-2 h-4 w-4" />
             Config
           </Button>
@@ -236,11 +235,8 @@ export default function MonitorPage() {
           <CardTitle>Response times</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="h-[200px] w-full">
-            {/* Replace this div with an actual chart component when available */}
-            <div className="flex items-center justify-center h-full bg-secondary text-secondary-foreground">
-              Chart placeholder
-            </div>
+          <div className="h-[300px] w-full">
+            <AreaChartComponent />
           </div>
         </CardContent>
       </Card>
