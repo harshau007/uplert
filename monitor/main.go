@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"database/sql"
 	"encoding/json"
 	"fmt"
@@ -9,6 +10,8 @@ import (
 	"strconv"
 	"sync"
 	"time"
+
+	"net/url"
 
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/streadway/amqp"
@@ -115,14 +118,25 @@ func processQueueData() {
 				continue
 			}
 
-			interval, err := strconv.Atoi(website.Interval)
+			decodedURL, err := url.QueryUnescape(website.URL)
 			if err != nil {
-				log.Printf("Invalid interval format for site %s: %v", website.URL, err)
+				log.Printf("Failed to decode URL: %v", err)
 				msg.Nack(false, false)
 				continue
 			}
+			website.URL = decodedURL
 
-			updateOrInsertWebsite(website.URL, interval)
+			if website.Interval == "delete" {
+				deleteWebsite(website.URL)
+			} else {
+				interval, err := strconv.Atoi(website.Interval)
+				if err != nil {
+					log.Printf("Invalid interval format for site %s: %v", website.URL, err)
+					msg.Nack(false, false)
+					continue
+				}
+				updateOrInsertWebsite(website.URL, interval)
+			}
 			msg.Ack(false)
 		}
 
@@ -161,35 +175,40 @@ func startMonitoringFromDB() {
 
 func startMonitoringWebsite(url string, interval int) {
 	if _, exists := monitorMap.LoadOrStore(url, true); !exists {
-		go monitorWebsite(url, interval)
+		go monitorWebsite(context.Background(), url, interval)
 	}
 }
 
-func monitorWebsite(url string, interval int) {
+func monitorWebsite(ctx context.Context, url string, interval int) {
 	for {
-		startTime := time.Now()
-		resp, err := http.Get(url)
-		responseTime := time.Since(startTime)
+		select {
+		case <-ctx.Done():
+			return
+		default:
+			startTime := time.Now()
+			resp, err := http.Get(url)
+			responseTime := time.Since(startTime)
 
-		var status string
-		if err != nil {
-			status = "Error: " + err.Error()
-		} else {
-			status = resp.Status
-			resp.Body.Close()
+			var status string
+			if err != nil {
+				status = "Error: " + err.Error()
+			} else {
+				status = resp.Status
+				resp.Body.Close()
+			}
+
+			log.Printf("Monitored %s. Status: %s, Response time: %v", url, status, responseTime)
+
+			result := MonitoringResult{
+				URL:          url,
+				Status:       status,
+				ResponseTime: responseTime,
+			}
+
+			publishResultToRabbitMQ(result)
+
+			time.Sleep(time.Duration(interval) * time.Second)
 		}
-
-		log.Printf("Monitored %s. Status: %s, Response time: %v", url, status, responseTime)
-
-		result := MonitoringResult{
-			URL:          url,
-			Status:       status,
-			ResponseTime: responseTime,
-		}
-
-		publishResultToRabbitMQ(result)
-
-		time.Sleep(time.Duration(interval) * time.Second)
 	}
 }
 
@@ -231,4 +250,34 @@ func connectToRabbitMQ() (*amqp.Connection, *amqp.Channel) {
 	}
 
 	return conn, ch
+}
+
+func deleteWebsite(urlLink string) {
+	decodedURL, err := url.QueryUnescape(urlLink)
+	if err != nil {
+		log.Printf("Failed to decode URL: %v", err)
+		return
+	}
+
+	result, err := db.Exec("DELETE FROM monitored_sites WHERE url = ?", decodedURL)
+	if err != nil {
+		log.Printf("Failed to delete website %s: %v", decodedURL, err)
+	} else {
+		rowsAffected, _ := result.RowsAffected()
+		if rowsAffected > 0 {
+			log.Printf("Deleted website: %s", decodedURL)
+			stopMonitoringWebsite(decodedURL)
+		} else {
+			log.Printf("Website %s not found in database", decodedURL)
+		}
+	}
+}
+
+func stopMonitoringWebsite(url string) {
+	if cancelFunc, ok := monitorMap.Load(url); ok {
+		if cf, ok := cancelFunc.(context.CancelFunc); ok {
+			cf()
+			monitorMap.Delete(url)
+		}
+	}
 }

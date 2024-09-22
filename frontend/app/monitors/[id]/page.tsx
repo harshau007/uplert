@@ -1,6 +1,6 @@
 "use client";
 
-import { AreaChartComponent } from "@/components/cbarts/area";
+import { AreaChartComponent } from "@/components/charts/area";
 import StatusIndicator from "@/components/statusIndicator";
 import {
   Breadcrumb,

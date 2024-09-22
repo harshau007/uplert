@@ -28,8 +28,8 @@ export function Sidebar() {
                 variant="ghost"
                 className={cn(
                   "w-full justify-start mt-1 text-white",
-                  pathname === item.href && "bg-muted/10",
-                  "hover:bg-muted/10 hover:text-white"
+                  pathname === item.href && "bg-muted/40",
+                  "hover:bg-muted/40 hover:text-white"
                 )}
               >
                 <item.icon className="mr-2 h-4 w-4" />
