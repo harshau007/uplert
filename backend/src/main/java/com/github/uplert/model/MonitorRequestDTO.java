@@ -8,6 +8,8 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.ColumnDefault;
+import org.springframework.boot.context.properties.bind.DefaultValue;
 
 import java.util.UUID;
 
@@ -35,4 +37,5 @@ public class MonitorRequestDTO {
 
     private Status status;
 
+    private Boolean isPaused;
 }

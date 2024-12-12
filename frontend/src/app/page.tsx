@@ -5,12 +5,6 @@ import StatusIndicator from "@/components/StatusIndicator";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import {
   Table,
   TableBody,
   TableCell,
@@ -20,12 +14,12 @@ import {
 } from "@/components/ui/table";
 import { useWebSocketContext } from "@/contexts/WebSocketContext";
 import { useStore } from "@/store/useStore";
-import { MoreVertical, PlusCircle, StopCircle, Trash2 } from "lucide-react";
+import { Pause, Play, PlusCircle } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useState } from "react";
 
 export default function Dashboard() {
-  const { websites, removeWebsite, stopMonitoring } = useStore();
+  const { websites, removeWebsite } = useStore();
   const { sendMessage } = useWebSocketContext();
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
 
@@ -47,33 +41,33 @@ export default function Dashboard() {
     [sendMessage]
   );
 
-  const handleStopMonitoring = useCallback(
-    (id: string) => {
-      stopMonitoring(id);
-      const website = websites.find((w) => w.id === id);
-      if (website) {
-        const message = {
-          action: "stop",
-          website: {
-            userId: 1,
-            requestId: 1,
-            projectId: id,
-            url: website.url,
-            interval: "THREE",
-          },
-        };
-        sendMessage(JSON.stringify(message));
-      }
+  const handlePauseWebsite = useCallback(
+    (id: string, url: string, interval: string) => {
+      const message = {
+        action: "pause",
+        website: {
+          userId: 1,
+          projectId: id,
+          url: url,
+          interval: interval,
+        },
+      };
+      sendMessage(JSON.stringify(message));
     },
-    [websites, stopMonitoring, sendMessage]
+    [sendMessage]
   );
 
-  const handleRemoveWebsite = useCallback(
-    (id: string) => {
-      handleStopMonitoring(id);
-      removeWebsite(id);
+  const handleResumeWebsite = useCallback(
+    (url: string) => {
+      const message = {
+        action: "resume",
+        website: {
+          url: url,
+        },
+      };
+      sendMessage(JSON.stringify(message));
     },
-    [handleStopMonitoring, removeWebsite]
+    [sendMessage]
   );
 
   return (
@@ -96,61 +90,76 @@ export default function Dashboard() {
                 <TableHead>URL</TableHead>
                 <TableHead>Response Time</TableHead>
                 <TableHead>Status Code</TableHead>
+                <TableHead>Interval</TableHead>
                 <TableHead>Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {websites.map((website) => (
-                <TableRow key={website.id}>
-                  <TableCell>
-                    <StatusIndicator isActive={website.isActive} />
-                  </TableCell>
-                  <TableCell>
-                    <Link
-                      href={`/website/${website.id}`}
-                      className="text-blue-500 hover:underline"
-                    >
-                      {website.url}
-                    </Link>
-                  </TableCell>
-                  <TableCell>{website.responseTime}ms</TableCell>
-                  <TableCell>
-                    <span
-                      className={
-                        website.statusCode >= 200 && website.statusCode < 300
-                          ? "text-green-500"
-                          : "text-red-500"
-                      }
-                    >
-                      {website.statusCode}
-                    </span>
-                  </TableCell>
-                  <TableCell>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" className="h-8 w-8 p-0">
-                          <span className="sr-only">Open menu</span>
-                          <MoreVertical className="h-4 w-4" />
+              {websites.map((website) => {
+                const latestCheck = website.checks[website.checks.length - 1];
+                return (
+                  <TableRow key={website.id}>
+                    <TableCell>
+                      <StatusIndicator
+                        isActive={
+                          website.isActive && latestCheck?.statusCode === 200
+                        }
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <Link
+                        href={`/website/${website.id}`}
+                        className="text-blue-500 hover:underline"
+                      >
+                        {website.url}
+                      </Link>
+                    </TableCell>
+                    <TableCell>
+                      {latestCheck?.responseTime ?? "N/A"}ms
+                    </TableCell>
+                    <TableCell>
+                      <span
+                        className={
+                          latestCheck?.statusCode >= 200 &&
+                          latestCheck?.statusCode < 300
+                            ? "text-green-500"
+                            : "text-red-500"
+                        }
+                      >
+                        {latestCheck?.statusCode ?? "N/A"}
+                      </span>
+                    </TableCell>
+                    <TableCell>{website.interval}</TableCell>
+                    <TableCell>
+                      {website.isActive ? (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() =>
+                            handlePauseWebsite(
+                              website.id,
+                              website.url,
+                              website.interval
+                            )
+                          }
+                          title="Pause Monitoring"
+                        >
+                          <Pause className="h-4 w-4" />
                         </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem
-                          onClick={() => handleStopMonitoring(website.id)}
+                      ) : (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleResumeWebsite(website.url)}
+                          title="Resume Monitoring"
                         >
-                          <StopCircle className="mr-2 h-4 w-4" />
-                          <span>Stop Monitoring</span>
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          onClick={() => handleRemoveWebsite(website.id)}
-                        >
-                          <Trash2 className="mr-2 h-4 w-4" />
-                          <span>Remove Website</span>
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </TableCell>
-                </TableRow>
-              ))}
+                          <Play className="h-4 w-4" />
+                        </Button>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
             </TableBody>
           </Table>
         </CardContent>

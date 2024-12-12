@@ -1,4 +1,12 @@
 spring:
+  data:
+    mongodb:
+      uri: ${MONGODB_URI:mongodb://harsh:harsh@localhost:27017/uplert?authSource=admin}
+      database: ${MONGODB_DATABASE:uplert}
+      username: harsh
+      password: harsh
+      port: 27017
+      host: localhost
   datasource:
     url: ${JDBC_DATABASE_URL:jdbc:h2:mem:uplert}
     username: ${JDBC_DATABASE_USERNAME:test}

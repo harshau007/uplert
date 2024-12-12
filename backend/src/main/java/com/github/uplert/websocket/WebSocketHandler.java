@@ -57,6 +57,14 @@ public class WebSocketHandler extends TextWebSocketHandler {
                     handleStopAction(session, json, gson);
                     break;
 
+                case "pause":
+                    handlePauseAction(session, json, gson);
+                    break;
+
+                case "resume":
+                    handleResumeAction(session, json, gson);
+                    break;
+
                 default:
                     sendErrorMessage(session, "Unknown action: " + action);
             }
@@ -64,6 +72,45 @@ public class WebSocketHandler extends TextWebSocketHandler {
             sendErrorMessage(session, "Invalid payload: " + e.getMessage());
             System.err.println("Error processing WebSocket message: " + e.getMessage());
         }
+    }
+
+    private void handlePauseAction(WebSocketSession session, JsonObject json, Gson gson) {
+        try {
+            if (!json.has("website")) {
+                sendErrorMessage(session, "Missing 'website' field in start action");
+                return;
+            }
+
+            JsonObject websiteJson = json.getAsJsonObject("website");
+            MonitorRequestDTO monitorRequest = gson.fromJson(websiteJson, MonitorRequestDTO.class);
+
+            if (!validateMonitorRequest(monitorRequest)) {
+                sendErrorMessage(session, "Invalid website details provided");
+                return;
+            }
+
+            monitorRequestService.pauseMonitoring(monitorRequest);
+            session.sendMessage(new TextMessage("Monitoring paused for: " + monitorRequest.getUrl()));
+        } catch (Exception e) {
+            sendErrorMessage(session, "Invalid payload: " + e.getMessage());
+        }
+    }
+
+    private void handleResumeAction(WebSocketSession session, JsonObject json, Gson gson) {
+       try {
+           if (!json.has("website")) {
+               sendErrorMessage(session, "Missing 'website' field in start action");
+               return;
+           }
+
+           JsonObject websiteJson = json.getAsJsonObject("website");
+           MonitorRequestDTO monitorRequestURL = gson.fromJson(websiteJson, MonitorRequestDTO.class);
+
+           monitorRequestService.resumeMonitoring(monitorRequestURL.getUrl(), session);
+           session.sendMessage(new TextMessage("Monitoring resumed for: " + monitorRequestURL));
+       } catch (Exception e) {
+           sendErrorMessage(session, "Invalid payload: " + e.getMessage());
+       }
     }
 
     private void handleStartAction(WebSocketSession session, JsonObject json, Gson gson) {

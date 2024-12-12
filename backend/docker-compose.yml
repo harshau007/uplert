@@ -1,0 +1,41 @@
+#  DBUSER=harsh DBPASS=harsh DBNAME=test BAUTH=admin BPASS=admin MPORT=27017 EPORT=8081 docker-compose up
+services:
+  mongodb:
+    image: mongo:4.2
+    environment:
+      - "MONGO_INITDB_ROOT_USERNAME=${DBUSER}"
+      - "MONGO_INITDB_DATABASE=${DBNAME}"
+      - "MONGO_INITDB_ROOT_PASSWORD=${DBPASS}"
+    networks:
+      - mongo-compose-network
+    ports:
+      - "${MPORT}:27017"
+    volumes:
+      - ./data:$HOME/Documents/MongoDB
+    labels:
+      - createdBy=DevBox
+
+  mongo-express:
+    image: mongo-express:1-20-alpine3.19
+    depends_on:
+      - mongodb
+    networks:
+      - mongo-compose-network
+    environment:
+      - "ME_CONFIG_MONGODB_ADMINUSERNAME=${DBUSER}"
+      - "ME_CONFIG_MONGODB_ADMINPASSWORD=${DBPASS}"
+      - "ME_CONFIG_BASICAUTH_USERNAME=${BAUTH}"
+      - "ME_CONFIG_BASICAUTH_PASSWORD=${BPASS}"
+      - ME_CONFIG_MONGODB_SERVER=mongodb
+    ports:
+      - "${EPORT}:8081"
+    volumes:
+      - ./data:$HOME/Documents/MongoDB
+    labels:
+      - createdBy=DevBox
+
+networks:
+  mongo-compose-network:
+    driver: bridge
+    labels:
+      - createdBy=DevBox

@@ -1,29 +1,27 @@
 import { v4 as uuidv4 } from "uuid";
 import { create } from "zustand";
 
-type Downtime = {
-  startTime: string;
-  endTime: string | null;
-  duration: number;
+type Check = {
+  timestamp: string;
+  responseTime: number;
+  statusCode: number;
 };
 
 type Website = {
   id: string;
   url: string;
-  responseTime: number;
-  statusCode: number;
+  interval: string;
+  checks: Check[];
   isActive: boolean;
-  downtime: Downtime[];
 };
 
 type State = {
   websites: Website[];
   addWebsite: (url: string, interval: string) => string;
-  updateWebsite: (id: string, data: Partial<Website>) => void;
+  updateWebsiteCheck: (id: string, check: Check) => void;
   removeWebsite: (id: string) => void;
-  stopMonitoring: (id: string) => void;
-  addDowntime: (id: string, startTime: string) => void;
-  updateDowntime: (id: string, endTime: string) => void;
+  pauseWebsite: (id: string) => void;
+  resumeWebsite: (id: string) => void;
 };
 
 export const useStore = create<State>((set) => ({
@@ -33,68 +31,33 @@ export const useStore = create<State>((set) => ({
     set((state) => ({
       websites: [
         ...state.websites,
-        {
-          id,
-          url,
-          responseTime: 0,
-          statusCode: 0,
-          isActive: false,
-          downtime: [],
-        },
+        { id, url, interval, checks: [], isActive: true },
       ],
     }));
     return id;
   },
-  updateWebsite: (id, data) =>
+  updateWebsiteCheck: (id, check) =>
     set((state) => ({
       websites: state.websites.map((website) =>
-        website.id === id ? { ...website, ...data } : website
+        website.id === id
+          ? { ...website, checks: [...website.checks, check].slice(-1000) }
+          : website
       ),
     })),
   removeWebsite: (id) =>
     set((state) => ({
       websites: state.websites.filter((website) => website.id !== id),
     })),
-  stopMonitoring: (id) =>
+  pauseWebsite: (id) =>
     set((state) => ({
       websites: state.websites.map((website) =>
         website.id === id ? { ...website, isActive: false } : website
       ),
     })),
-  addDowntime: (id, startTime) =>
+  resumeWebsite: (id) =>
     set((state) => ({
       websites: state.websites.map((website) =>
-        website.id === id
-          ? {
-              ...website,
-              downtime: [
-                ...website.downtime,
-                { startTime, endTime: null, duration: 0 },
-              ],
-            }
-          : website
-      ),
-    })),
-  updateDowntime: (id, endTime) =>
-    set((state) => ({
-      websites: state.websites.map((website) =>
-        website.id === id
-          ? {
-              ...website,
-              downtime: website.downtime.map((dt, index) =>
-                index === website.downtime.length - 1 && dt.endTime === null
-                  ? {
-                      ...dt,
-                      endTime,
-                      duration:
-                        (new Date(endTime).getTime() -
-                          new Date(dt.startTime).getTime()) /
-                        60000,
-                    }
-                  : dt
-              ),
-            }
-          : website
+        website.id === id ? { ...website, isActive: true } : website
       ),
     })),
 }));

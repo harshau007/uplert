@@ -13,7 +13,6 @@ import jakarta.persistence.Id;
 import jakarta.persistence.SequenceGenerator;
 import jakarta.persistence.Table;
 import java.time.OffsetDateTime;
-import java.util.UUID;
 
 import lombok.Getter;
 import lombok.Setter;
@@ -59,6 +58,9 @@ public class MonitorRequest {
     @Column
     @Enumerated(EnumType.STRING)
     private Status status;
+
+    @Column(nullable = false)
+    private Boolean isPaused;
 
     @CreatedDate
     @Column(nullable = false, updatable = false)

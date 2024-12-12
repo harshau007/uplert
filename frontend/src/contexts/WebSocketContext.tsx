@@ -17,7 +17,8 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
   const [socketUrl] = React.useState("ws://127.0.0.1:8080/ws");
-  const { websites, updateWebsite, addDowntime, updateDowntime } = useStore();
+  const { websites, updateWebsiteCheck, pauseWebsite, resumeWebsite } =
+    useStore();
   const websitesRef = useRef(websites);
 
   const { sendMessage, lastMessage, readyState } = useWebSocket(socketUrl, {
@@ -27,16 +28,18 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({
     onOpen: () => {
       console.log("WebSocket connection established");
       websitesRef.current.forEach((website) => {
-        const message = {
-          action: "start",
-          website: {
-            userId: 1,
-            projectId: website.id,
-            url: website.url,
-            interval: "THREE",
-          },
-        };
-        sendMessage(JSON.stringify(message));
+        if (website.isActive) {
+          const message = {
+            action: "start",
+            website: {
+              userId: 1,
+              projectId: website.id,
+              url: website.url,
+              interval: website.interval,
+            },
+          };
+          sendMessage(JSON.stringify(message));
+        }
       });
     },
   });
@@ -48,34 +51,38 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({
   useEffect(() => {
     if (lastMessage) {
       try {
+        console.log("Received WebSocket message:", lastMessage.data);
         const data = JSON.parse(lastMessage.data);
-        const isActive = data.statusCode >= 200 && data.statusCode < 300;
-        updateWebsite(data.projectId, {
+        console.log("Parsed WebSocket message:", data);
+
+        const check = {
+          timestamp: new Date().toISOString(),
           responseTime: data.responseTime,
           statusCode: data.statusCode,
-          isActive: isActive,
-        });
+        };
+        updateWebsiteCheck(data.projectId, check);
 
-        const website = websitesRef.current.find(
-          (w) => w.id === data.projectId
-        );
-        if (website) {
-          if (!isActive) {
-            if (website.isActive) {
-              // Website just went down
-              addDowntime(data.projectId, new Date().toISOString());
-            }
+        if (data.statusCode !== 200) {
+          const website = websitesRef.current.find(
+            (w) => w.id === data.projectId
+          );
+          if (website) {
             showLimitedToast(website.url, data.statusCode);
-          } else if (!website.isActive) {
-            // Website just came back up
-            updateDowntime(data.projectId, new Date().toISOString());
           }
+        }
+        if (data.action === "pause") {
+          pauseWebsite(data.projectId);
+        } else if (data.action === "resume") {
+          resumeWebsite(data.projectId);
+        } else {
+          console.warn("Unknown action received:", data.action);
         }
       } catch (error) {
         console.error("Error parsing WebSocket message:", error);
+        console.error("Raw message:", lastMessage.data);
       }
     }
-  }, [lastMessage, updateWebsite, addDowntime, updateDowntime]);
+  }, [lastMessage, updateWebsiteCheck, pauseWebsite, resumeWebsite]);
 
   return (
     <WebSocketContext.Provider value={{ sendMessage, lastMessage, readyState }}>
