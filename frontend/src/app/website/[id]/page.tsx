@@ -9,11 +9,10 @@ import { useWebSocketContext } from "@/contexts/WebSocketContext";
 import { useStore } from "@/store/useStore";
 import { ArrowLeft, Pause, Play } from "lucide-react";
 import Link from "next/link";
-import { useParams, useRouter } from "next/navigation";
+import { useParams } from "next/navigation";
 
 export default function WebsiteDetails() {
   const { id } = useParams();
-  const router = useRouter();
   const { websites } = useStore();
   const { sendMessage } = useWebSocketContext();
 
@@ -61,23 +60,22 @@ export default function WebsiteDetails() {
           </Link>
           <h1 className="text-3xl font-bold">{website.url}</h1>
         </div>
-        {website.isActive ? (
+        <div className="flex items-center space-x-4">
           <Button
             variant="outline"
             onClick={handlePauseWebsite}
             title="Pause Monitoring"
           >
-            <Pause className="mr-2 h-4 w-4" /> Pause Monitoring
+            <Pause className="h-4 w-4" />
           </Button>
-        ) : (
           <Button
             variant="outline"
             onClick={handleResumeWebsite}
             title="Resume Monitoring"
           >
-            <Play className="mr-2 h-4 w-4" /> Resume Monitoring
+            <Play className="h-4 w-4" />
           </Button>
-        )}
+        </div>
       </div>
 
       <StatusTimeline checks={website.checks} interval={website.interval} />

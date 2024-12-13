@@ -35,21 +35,21 @@ public class MonitorRequestResource {
 
     @GetMapping("/{requestId}")
     public ResponseEntity<MonitorRequestDTO> getMonitorRequest(
-            @PathVariable(name = "requestId") final Long requestId) {
+            @PathVariable(name = "requestId") final String requestId) {
         return ResponseEntity.ok(monitorRequestService.get(requestId));
     }
 
     @PostMapping
     @ApiResponse(responseCode = "201")
-    public ResponseEntity<Long> createMonitorRequest(
+    public ResponseEntity<String> createMonitorRequest(
             @RequestBody @Valid final MonitorRequestDTO monitorRequestDTO) {
-        final Long createdRequestId = monitorRequestService.create(monitorRequestDTO);
+        final String createdRequestId = monitorRequestService.create(monitorRequestDTO);
         return new ResponseEntity<>(createdRequestId, HttpStatus.CREATED);
     }
 
     @PutMapping("/{requestId}")
-    public ResponseEntity<Long> updateMonitorRequest(
-            @PathVariable(name = "requestId") final Long requestId,
+    public ResponseEntity<String> updateMonitorRequest(
+            @PathVariable(name = "requestId") final String requestId,
             @RequestBody @Valid final MonitorRequestDTO monitorRequestDTO) {
         monitorRequestService.update(requestId, monitorRequestDTO);
         return ResponseEntity.ok(requestId);
@@ -58,7 +58,7 @@ public class MonitorRequestResource {
     @DeleteMapping("/{requestId}")
     @ApiResponse(responseCode = "204")
     public ResponseEntity<Void> deleteMonitorRequest(
-            @PathVariable(name = "requestId") final Long requestId) {
+            @PathVariable(name = "requestId") final String requestId) {
         monitorRequestService.delete(requestId);
         return ResponseEntity.noContent().build();
     }

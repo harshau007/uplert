@@ -24,7 +24,6 @@ export function StatusTimeline({
     recentChecks.length > 0
       ? new Date(recentChecks[0].timestamp).toLocaleTimeString()
       : "";
-  const now = new Date().toLocaleTimeString();
 
   return (
     <Card className={cn("p-6", className)}>

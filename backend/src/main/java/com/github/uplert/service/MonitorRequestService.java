@@ -47,32 +47,32 @@ public class MonitorRequestService {
                 .toList();
     }
 
-    public MonitorRequestDTO get(final Long requestId) {
+    public MonitorRequestDTO get(final String requestId) {
         return monitorRequestRepository.findById(requestId)
                 .map(monitorRequest -> mapToDTO(monitorRequest, new MonitorRequestDTO()))
                 .orElseThrow(NotFoundException::new);
     }
 
-    public Long create(final MonitorRequestDTO monitorRequestDTO) {
+    public String create(final MonitorRequestDTO monitorRequestDTO) {
         final MonitorRequest monitorRequest = new MonitorRequest();
         mapToEntity(monitorRequestDTO, monitorRequest);
-        return monitorRequestRepository.save(monitorRequest).getRequestId();
+        return monitorRequestRepository.save(monitorRequest).getId();
     }
 
-    public void update(final Long requestId, final MonitorRequestDTO monitorRequestDTO) {
+    public void update(final String requestId, final MonitorRequestDTO monitorRequestDTO) {
         final MonitorRequest monitorRequest = monitorRequestRepository.findById(requestId)
                 .orElseThrow(NotFoundException::new);
         mapToEntity(monitorRequestDTO, monitorRequest);
         monitorRequestRepository.save(monitorRequest);
     }
 
-    public void delete(final Long requestId) {
+    public void delete(final String requestId) {
         monitorRequestRepository.deleteById(requestId);
     }
 
     private MonitorRequestDTO mapToDTO(final MonitorRequest monitorRequest,
             final MonitorRequestDTO monitorRequestDTO) {
-        monitorRequestDTO.setRequestId(monitorRequest.getRequestId());
+        monitorRequestDTO.setId(monitorRequest.getId());
         monitorRequestDTO.setUserId(monitorRequest.getUserId());
         monitorRequestDTO.setProjectId(monitorRequest.getProjectId());
         monitorRequestDTO.setUrl(monitorRequest.getUrl());
@@ -99,7 +99,7 @@ public class MonitorRequestService {
         List<MonitoringSites> monitoringSites = monitoringSitesRepository.findAll();
 
         List<MonitoringSitesDTO> sitesDTOS = monitoringSites.stream().map(site -> new MonitoringSitesDTO(
-                site.getSiteId(),
+                site.getId(),
                 site.getProjectId(),
                 site.getUrl(),
                 site.getInterval(),
@@ -114,7 +114,7 @@ public class MonitorRequestService {
         if (jobs.isEmpty()) {
             for (MonitoringSites monitoringSite : monitoringSites) {
                 startMonitoring(new MonitorRequestDTO(
-                        1L,
+                        "",
                         1L,
                         monitoringSite.getProjectId(),
                         monitoringSite.getUrl(),
@@ -129,12 +129,14 @@ public class MonitorRequestService {
     public void startMonitoring(MonitorRequestDTO monitorRequestDTO, WebSocketSession session) {
         MonitoringJobService job = new MonitoringJobService(monitorRequestDTO, session, monitoringLogRepository);
 
-        MonitoringSites monitoringSite = new MonitoringSites();
-        monitoringSite.setProjectId(monitorRequestDTO.getProjectId());
-        monitoringSite.setUrl(monitorRequestDTO.getUrl());
-        monitoringSite.setInterval(monitorRequestDTO.getInterval());
-        monitoringSite.setStatus(monitorRequestDTO.getStatus());
-        monitoringSitesRepository.save(monitoringSite);
+        if (!monitoringSitesRepository.existsByUrl(monitorRequestDTO.getUrl())) {
+            MonitoringSites monitoringSite = new MonitoringSites();
+            monitoringSite.setProjectId(monitorRequestDTO.getProjectId());
+            monitoringSite.setUrl(monitorRequestDTO.getUrl());
+            monitoringSite.setInterval(monitorRequestDTO.getInterval());
+            monitoringSite.setStatus(monitorRequestDTO.getStatus());
+            monitoringSitesRepository.save(monitoringSite);
+        }
 
         ScheduledFuture<?> future = schedular.scheduleAtFixedRate(
                 job, 0, monitorRequestDTO.getInterval().getInterval(), TimeUnit.SECONDS
@@ -142,20 +144,12 @@ public class MonitorRequestService {
         jobs.put(monitorRequestDTO.getUrl().hashCode(), future);
     }
 
-    public void stopMonitoring1(MonitorRequestDTO monitorRequestDTO) {
-        monitoringSitesRepository.delete(monitoringSitesRepository.findByUrl(monitorRequestDTO.getUrl()));
-        ScheduledFuture<?> future = jobs.remove(monitorRequestDTO.getUrl().hashCode());
-        if (future != null) {
-            future.cancel(true);
-        }
-    }
-
     public void stopMonitoring(MonitorRequestDTO monitorRequestDTO) {
         try {
             MonitoringSites existingSite = monitoringSitesRepository.findByUrl(monitorRequestDTO.getUrl());
 
             if (existingSite.getUrl().equals(monitorRequestDTO.getUrl())) {
-                monitoringSitesRepository.delete(monitoringSitesRepository.findByUrl(monitorRequestDTO.getUrl()));
+                monitoringSitesRepository.deleteById(monitoringSitesRepository.findByUrl(monitorRequestDTO.getUrl()).getId());
             }
 
             ScheduledFuture<?> future = jobs.remove(monitorRequestDTO.getUrl().hashCode());

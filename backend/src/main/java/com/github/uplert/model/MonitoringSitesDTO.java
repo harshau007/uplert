@@ -10,7 +10,7 @@ import lombok.*;
 @NoArgsConstructor
 @AllArgsConstructor
 public class MonitoringSitesDTO {
-    private Long siteId;
+    private String siteId;
 
     @NotNull
     private String projectId;

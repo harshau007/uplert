@@ -1,0 +1,26 @@
+FROM node:18-alpine AS builder
+
+WORKDIR /uplert
+
+COPY package.json package-lock.json ./
+
+COPY . .
+
+RUN npm install
+
+RUN npm run build
+
+FROM node:18-alpine AS runner
+
+WORKDIR /uplert
+
+COPY --from=builder /uplert/package.json ./
+COPY --from=builder /uplert/package-lock.json ./
+COPY --from=builder /uplert/next.config.mjs ./
+COPY --from=builder /uplert/public ./
+COPY --from=builder /uplert/.next/standalone ./
+COPY --from=builder /uplert/.next/static ./.next/static
+
+EXPOSE 3000
+
+ENTRYPOINT [ "node", "server.js" ]

@@ -19,7 +19,7 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 public class MonitorRequestDTO {
-    private Long requestId;
+    private String id;
 
     @NotNull
     private Long userId;

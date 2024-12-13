@@ -11,7 +11,7 @@ services:
     ports:
       - "${MPORT}:27017"
     volumes:
-      - ./data:$HOME/Documents/MongoDB
+      - $HOME/Documents/MongoDB:./data
     labels:
       - createdBy=DevBox
 
@@ -30,7 +30,7 @@ services:
     ports:
       - "${EPORT}:8081"
     volumes:
-      - ./data:$HOME/Documents/MongoDB
+      - $HOME/Documents/MongoDB:./data
     labels:
       - createdBy=DevBox
 

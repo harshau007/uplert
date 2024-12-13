@@ -15,6 +15,14 @@ type Website = {
   isActive: boolean;
 };
 
+type RunningWebsite = {
+  siteId: string;
+  projectId: string;
+  url: string;
+  interval: string;
+  status: string | null;
+};
+
 type State = {
   websites: Website[];
   addWebsite: (url: string, interval: string) => string;
@@ -22,6 +30,9 @@ type State = {
   removeWebsite: (id: string) => void;
   pauseWebsite: (id: string) => void;
   resumeWebsite: (id: string) => void;
+  syncRunningWebsites: (runningWebsites: RunningWebsite[]) => void;
+  pauseAllWebsites: () => void;
+  resumeAllWebsites: () => void;
 };
 
 export const useStore = create<State>((set) => ({
@@ -40,7 +51,7 @@ export const useStore = create<State>((set) => ({
     set((state) => ({
       websites: state.websites.map((website) =>
         website.id === id
-          ? { ...website, checks: [...website.checks, check].slice(-1000) }
+          ? { ...website, checks: [check, ...website.checks].slice(0, 1000) }
           : website
       ),
     })),
@@ -59,5 +70,49 @@ export const useStore = create<State>((set) => ({
       websites: state.websites.map((website) =>
         website.id === id ? { ...website, isActive: true } : website
       ),
+    })),
+  syncRunningWebsites: (runningWebsites) =>
+    set((state) => {
+      const updatedWebsites = state.websites.map((website) => {
+        const runningWebsite = runningWebsites.find(
+          (rw) => rw.projectId === website.id
+        );
+        if (runningWebsite) {
+          return {
+            ...website,
+            isActive: runningWebsite.status === null,
+            interval: runningWebsite.interval,
+          };
+        }
+        return website;
+      });
+
+      const newWebsites = runningWebsites
+        .filter((rw) => !state.websites.some((w) => w.id === rw.projectId))
+        .map((rw) => ({
+          id: rw.projectId,
+          url: rw.url,
+          interval: rw.interval,
+          checks: [],
+          isActive: rw.status === null,
+        }));
+
+      return {
+        websites: [...updatedWebsites, ...newWebsites],
+      };
+    }),
+  pauseAllWebsites: () =>
+    set((state) => ({
+      websites: state.websites.map((website) => ({
+        ...website,
+        isActive: false,
+      })),
+    })),
+  resumeAllWebsites: () =>
+    set((state) => ({
+      websites: state.websites.map((website) => ({
+        ...website,
+        isActive: true,
+      })),
     })),
 }));

@@ -9,65 +9,48 @@ import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
 import jakarta.persistence.SequenceGenerator;
 import jakarta.persistence.Table;
 import java.time.OffsetDateTime;
 
 import lombok.Getter;
 import lombok.Setter;
+import org.bson.codecs.pojo.annotations.BsonProperty;
 import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.annotation.Id;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
+import org.springframework.data.mongodb.core.mapping.Document;
 
 
-@Entity
-@Table(name = "MonitorRequests")
+@Document(collection = "monitoring_request")
 @EntityListeners(AuditingEntityListener.class)
 @Getter
 @Setter
 public class MonitorRequest {
 
     @Id
-    @Column(nullable = false, updatable = false)
-    @SequenceGenerator(
-            name = "primary_sequence",
-            sequenceName = "primary_sequence",
-            allocationSize = 1,
-            initialValue = 10000
-    )
-    @GeneratedValue(
-            strategy = GenerationType.SEQUENCE,
-            generator = "primary_sequence"
-    )
-    private Long requestId;
+    private String id;
 
-    @Column(nullable = false)
     private Long userId;
 
-    @Column(nullable = false)
     private String projectId;
 
-    @Column(nullable = false, unique = true)
     private String url;
 
-    @Column(nullable = false, name = "\"interval\"")
+    @BsonProperty(value = "interval")
     @Enumerated(EnumType.ORDINAL)
     private Intervals interval;
 
-    @Column
     @Enumerated(EnumType.STRING)
     private Status status;
 
-    @Column(nullable = false)
     private Boolean isPaused;
 
     @CreatedDate
-    @Column(nullable = false, updatable = false)
     private OffsetDateTime dateCreated;
 
     @LastModifiedDate
-    @Column(nullable = false)
     private OffsetDateTime lastUpdated;
 
 }

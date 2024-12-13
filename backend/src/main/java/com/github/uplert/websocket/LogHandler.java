@@ -59,7 +59,7 @@ public class LogHandler extends TextWebSocketHandler {
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
-            }, 0, interval.getInterval(), TimeUnit.MILLISECONDS);
+            }, 0, interval.getInterval(), TimeUnit.SECONDS);
 
             sessionTasks.put(session, task);
         } else {

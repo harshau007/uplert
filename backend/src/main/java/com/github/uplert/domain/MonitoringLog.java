@@ -1,17 +1,12 @@
 package com.github.uplert.domain;
 
 import com.github.uplert.model.Intervals;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
 import lombok.*;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
-import java.util.TimeZone;
 
 @Document(collection = "monitoring_logs")
 @Data
@@ -58,8 +53,8 @@ public class MonitoringLog {
 
         this.logs.add(0, entry);
 
-        if (this.logs.size() > 5) {
-            this.logs = this.logs.subList(0, 5);
+        if (this.logs.size() > 20) {
+            this.logs = this.logs.subList(0, 20);
         }
     }
 }

@@ -11,6 +11,7 @@ import org.springframework.web.socket.handler.TextWebSocketHandler;
 
 import java.io.IOException;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 
 @Component
@@ -24,10 +25,18 @@ public class WebSocketHandler extends TextWebSocketHandler {
 
     @Override
     public void afterConnectionEstablished(WebSocketSession session) throws Exception {
-        String sessionId = session.getId();
+        String sessionId = extractSessionId(session);
+
+        if(sessionId.isEmpty()) {
+            if (!userSessions.containsKey(sessionId)) {
+                sessionId = session.getId();
+            }
+        }
+
         userSessions.put(sessionId, session);
-//        monitorRequestService.startMonitorfromMonitoringSites(session);
+        monitorRequestService.startMonitorfromMonitoringSites(session);
         session.sendMessage(new TextMessage(monitorRequestService.currentlyRunning()));
+        session.sendMessage(new TextMessage(String.format("{\"sessionId\":\"%s\"}", sessionId)));
         System.out.println("WebSocket connection established. Session ID: " + sessionId);
     }
 
@@ -35,10 +44,12 @@ public class WebSocketHandler extends TextWebSocketHandler {
     public void handleMessage(WebSocketSession session, WebSocketMessage<?> message) throws Exception {
         String payload = (String) message.getPayload();
         Gson gson = new GsonBuilder().setPrettyPrinting().create();
+        String sessionId = extractSessionId(session);
 
-        if (!userSessions.containsKey(session.getId())) {
-            userSessions.put(session.getId(), session);
+        if (!userSessions.containsKey(sessionId)) {
+            userSessions.put(sessionId, session);
         }
+
         try {
             JsonObject json = JsonParser.parseString(payload).getAsJsonObject();
 
@@ -138,6 +149,7 @@ public class WebSocketHandler extends TextWebSocketHandler {
 
     private void handleStopAction(WebSocketSession session, JsonObject json, Gson gson) {
         try {
+            String sessionId = extractSessionId(session);
             if (!json.has("website")) {
                 sendErrorMessage(session, "Missing 'website' field in stop action");
                 return;
@@ -146,12 +158,12 @@ public class WebSocketHandler extends TextWebSocketHandler {
             JsonObject websiteJson = json.getAsJsonObject("website");
             MonitorRequestDTO monitorRequest = gson.fromJson(websiteJson, MonitorRequestDTO.class);
 
-            if (monitorRequest.getRequestId() == null || monitorRequest.getRequestId() <= 0) {
+            if (monitorRequest.getId() == null || monitorRequest.getId().isEmpty()) {
                 sendErrorMessage(session, "Invalid request ID provided");
                 return;
             }
 
-            synchronized (userSessions.get(session.getId())) {
+            synchronized (userSessions.get(sessionId)) {
                 monitorRequestService.stopMonitoring(monitorRequest);
             }
             session.sendMessage(new TextMessage("Monitoring stopped for: " + monitorRequest.getUrl()));
@@ -194,21 +206,32 @@ public class WebSocketHandler extends TextWebSocketHandler {
         }
     }
 
-    @Override
-    public void afterConnectionClosed(WebSocketSession session, org.springframework.web.socket.CloseStatus status) {
-        String sessionId = session.getId();
-        userSessions.remove(sessionId);
-        System.out.println("WebSocket connection closed. Session ID: " + sessionId);
-    }
+//    @Override
+//    public void afterConnectionClosed(WebSocketSession session, org.springframework.web.socket.CloseStatus status) {
+//        String sessionId = extractSessionId(session);
+//        if (sessionId != null) {
+//            userSessions.remove(sessionId);
+//            System.out.println("WebSocket connection closed. SessionId: " + sessionId);
+//        }
+//    }
 
-    public void broadcastMessage(String message) {
-        userSessions.values().forEach(session -> {
-            try {
-                session.sendMessage(new TextMessage(message));
-            } catch (IOException e) {
-                System.err.println("Failed to send message to session: " + session.getId());
+    private String extractSessionId(WebSocketSession session) {
+        if (session.getUri() == null) {
+            return "";
+        }
+
+        String query = session.getUri().getQuery();
+        if (query == null || query.isEmpty()) {
+            return "";
+        }
+
+        for (String param : query.split("&")) {
+            String[] keyValue = param.split("=");
+            if (keyValue.length == 2 && "sessionId".equals(keyValue[0])) {
+                return keyValue[1];
             }
-        });
+        }
+        return "";
     }
 
 }

@@ -1,0 +1,3 @@
+- [ ] Use data from /ws/{projectId}/log to plant all data at dedicated dashboard
+- [ ] make sure all data is updating correctly as its coming from /ws/{projectId}/log endpoint
+- [ ] handle pause, resume, and stop functionality with their state

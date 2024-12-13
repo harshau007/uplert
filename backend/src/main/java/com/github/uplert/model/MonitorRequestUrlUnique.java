@@ -55,7 +55,7 @@ public @interface MonitorRequestUrlUnique {
             @SuppressWarnings("unchecked") final Map<String, String> pathVariables =
                     ((Map<String, String>)request.getAttribute(HandlerMapping.URI_TEMPLATE_VARIABLES_ATTRIBUTE));
             final String currentId = pathVariables.get("requestId");
-            if (currentId != null && value.equalsIgnoreCase(monitorRequestService.get(Long.parseLong(currentId)).getUrl())) {
+            if (currentId != null && value.equalsIgnoreCase(monitorRequestService.get(currentId).getUrl())) {
                 // value hasn't changed
                 return true;
             }

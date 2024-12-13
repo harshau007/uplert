@@ -50,7 +50,7 @@ export function LogDisplay({ projectId }: LogDisplayProps) {
           </TableHeader>
           <TableBody>
             {currentLogs.map((log, index) => (
-              <TableRow key={log.timestamp}>
+              <TableRow key={index}>
                 <TableCell>
                   {new Date(log.timestamp).toLocaleString()}
                 </TableCell>

@@ -1,0 +1,75 @@
+#  DBUSER=harsh DBPASS=harsh DBNAME=uplert BAUTH=admin BPASS=admin docker-compose up
+services:
+  mongodb:
+    image: mongo:4.2
+    container_name: mongodb
+    environment:
+      - "MONGO_INITDB_ROOT_USERNAME=${DBUSER}"
+      - "MONGO_INITDB_DATABASE=${DBNAME}"
+      - "MONGO_INITDB_ROOT_PASSWORD=${DBPASS}"
+    networks:
+      - uplert-network
+    ports:
+      - "27017:27017"
+    volumes:
+      - ./data:$HOME/Documents/MongoDB
+    labels:
+      - createdBy=uplert
+
+  backend:
+    image: uplert-backend:latest
+    container_name: backend
+    depends_on:
+      - mongodb
+    networks:
+      - uplert-network
+    environment:
+      - "SPRING_DATA_MONGODB_URI=mongodb://harsh:harsh@mongodb:27017/uplert?authSource=admin"
+      - "SPRING_DATA_MONGODB_DATABASE=uplert"
+      - "SPRING_DATA_MONGODB_USERNAME=harsh"
+      - "SPRING_DATA_MONGODB_PASSWORD=harsh"
+      - "SPRING_DATA_MONGODB_HOST=mongodb"
+    ports:
+      - "8080:8080"
+    labels:
+      - createdBy=uplert
+
+  frontend:
+    image: uplert-frontend:latest
+    container_name: frontend
+    depends_on:
+      - backend
+    networks:
+      - uplert-network
+    environment:
+      - API_BASE_ENDPOINT="backend:8080"
+    ports:
+      - "3000:3000"
+    labels:
+      - createdBy=uplert
+
+  mongo-express:
+    image: mongo-express:1-20-alpine3.19
+    container_name: mongoexpress
+    depends_on:
+      - mongodb
+    networks:
+      - uplert-network
+    environment:
+      - "ME_CONFIG_MONGODB_ADMINUSERNAME=${DBUSER}"
+      - "ME_CONFIG_MONGODB_ADMINPASSWORD=${DBPASS}"
+      - "ME_CONFIG_BASICAUTH_USERNAME=${BAUTH}"
+      - "ME_CONFIG_BASICAUTH_PASSWORD=${BPASS}"
+      - ME_CONFIG_MONGODB_SERVER=mongodb
+    ports:
+      - "8081:8081"
+    volumes:
+      - ./data:$HOME/Documents/MongoDB
+    labels:
+      - createdBy=uplert
+
+networks:
+  uplert-network:
+    driver: bridge
+    labels:
+      - createdBy=uplert
