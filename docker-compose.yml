@@ -17,7 +17,7 @@ services:
       - createdBy=uplert
 
   backend:
-    image: uplert-backend:latest
+    image: harshau04/uplert-backend:latest
     container_name: backend
     depends_on:
       - mongodb
@@ -35,7 +35,7 @@ services:
       - createdBy=uplert
 
   frontend:
-    image: uplert-frontend:latest
+    image: harshau04/uplert-frontend:latest
     container_name: frontend
     depends_on:
       - backend
