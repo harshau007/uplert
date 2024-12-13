@@ -7,8 +7,11 @@ import lombok.*;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
+import java.util.TimeZone;
 
 @Document(collection = "monitoring_logs")
 @Data
@@ -29,13 +32,14 @@ public class MonitoringLog {
     @Getter
     @Setter
     public static class LogEntry {
-        private long timestamp = System.currentTimeMillis();
+        private String timestamp;
         private String website;
         private Long responseTime;
         private Integer statusCode;
         private String error;
 
-        public LogEntry(String website, long responseTime, int statusCode) {
+        public LogEntry(String website, String timestamp, long responseTime, int statusCode) {
+            this.timestamp = timestamp;
             this.website = website;
             this.responseTime = responseTime;
             this.statusCode = statusCode;
@@ -54,8 +58,8 @@ public class MonitoringLog {
 
         this.logs.add(0, entry);
 
-        if (this.logs.size() > 100) {
-            this.logs = this.logs.subList(0, 100);
+        if (this.logs.size() > 5) {
+            this.logs = this.logs.subList(0, 5);
         }
     }
 }

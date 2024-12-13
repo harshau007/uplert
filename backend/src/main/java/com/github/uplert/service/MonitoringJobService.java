@@ -9,6 +9,9 @@ import org.springframework.web.socket.WebSocketSession;
 import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.TimeZone;
 
 public class MonitoringJobService implements Runnable{
     private final MonitorRequestDTO website;
@@ -29,9 +32,11 @@ public class MonitoringJobService implements Runnable{
             connection.setRequestMethod("GET");
             int statusCode = connection.getResponseCode();
             long responseTime = System.currentTimeMillis() - startTime;
-
+            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ");
+            sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
+            String timestamp = sdf.format(new Date(System.currentTimeMillis()));
             MonitoringLog.LogEntry logEntry = new MonitoringLog.LogEntry(
-                    website.getUrl(), responseTime, statusCode
+                    website.getUrl(), timestamp,responseTime, statusCode
             );
 
             MonitoringLog monitoringLog = monitoringLogRepository

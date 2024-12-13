@@ -2,8 +2,21 @@
 
 import { useStore } from "@/store/useStore";
 import { showLimitedToast } from "@/utils/toast";
-import React, { createContext, useContext, useEffect, useRef } from "react";
+import React, {
+  createContext,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 import useWebSocket, { ReadyState } from "react-use-websocket";
+
+type Log = {
+  website: string;
+  timestamp: string;
+  responseTime: number;
+  statusCode: number;
+};
 
 type WebSocketContextType = {
   sendMessage: (message: string) => void;
@@ -51,10 +64,7 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({
   useEffect(() => {
     if (lastMessage) {
       try {
-        console.log("Received WebSocket message:", lastMessage.data);
         const data = JSON.parse(lastMessage.data);
-        console.log("Parsed WebSocket message:", data);
-
         const check = {
           timestamp: new Date().toISOString(),
           responseTime: data.responseTime,
@@ -74,12 +84,9 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({
           pauseWebsite(data.projectId);
         } else if (data.action === "resume") {
           resumeWebsite(data.projectId);
-        } else {
-          console.warn("Unknown action received:", data.action);
         }
       } catch (error) {
         console.error("Error parsing WebSocket message:", error);
-        console.error("Raw message:", lastMessage.data);
       }
     }
   }, [lastMessage, updateWebsiteCheck, pauseWebsite, resumeWebsite]);
@@ -99,4 +106,36 @@ export const useWebSocketContext = () => {
     );
   }
   return context;
+};
+
+export const useWebsiteLogs = (projectId: string) => {
+  const [logs, setLogs] = useState<Log[]>([]);
+  const socketRef = useRef<WebSocket | null>(null);
+
+  useEffect(() => {
+    socketRef.current = new WebSocket(
+      `ws://127.0.0.1:8080/ws/${projectId}/log`
+    );
+
+    socketRef.current.onmessage = (event) => {
+      const newLogs = JSON.parse(event.data);
+      setLogs((prevLogs) => {
+        if (Array.isArray(newLogs)) {
+          // Initial batch of logs
+          return newLogs;
+        } else {
+          // Single new log
+          return [...prevLogs, newLogs];
+        }
+      });
+    };
+
+    return () => {
+      if (socketRef.current) {
+        socketRef.current.close();
+      }
+    };
+  }, [projectId]);
+
+  return logs;
 };

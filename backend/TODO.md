@@ -1,0 +1,3 @@
+- [x] implement log route for seperate path for logs and other details
+- [ ] implement pause & resume feature
+- [ ] persistance data for dashboard to keep record 

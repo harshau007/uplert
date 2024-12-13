@@ -1,5 +1,6 @@
 "use client";
 
+import { LogDisplay } from "@/components/LogDisplay";
 import { ResponseTimeChart } from "@/components/ResponseTimeChart";
 import { StatsGrid } from "@/components/StatsGrid";
 import { StatusTimeline } from "@/components/StatusTimeline";
@@ -9,15 +10,13 @@ import { useStore } from "@/store/useStore";
 import { ArrowLeft, Pause, Play } from "lucide-react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { useState } from "react";
 
 export default function WebsiteDetails() {
   const { id } = useParams();
   const router = useRouter();
   const { websites } = useStore();
   const { sendMessage } = useWebSocketContext();
-  const [pause, setPause] = useState(false);
-  const [resume, setResume] = useState(false);
+
   const website = websites.find((w) => w.id === id);
 
   const handlePauseWebsite = () => {
@@ -31,7 +30,6 @@ export default function WebsiteDetails() {
           interval: website.interval,
         },
       };
-      setPause(!pause);
       sendMessage(JSON.stringify(message));
     }
   };
@@ -44,7 +42,6 @@ export default function WebsiteDetails() {
           url: website.url,
         },
       };
-      setResume(!resume);
       sendMessage(JSON.stringify(message));
     }
   };
@@ -64,24 +61,23 @@ export default function WebsiteDetails() {
           </Link>
           <h1 className="text-3xl font-bold">{website.url}</h1>
         </div>
-        <div className="flex items-center space-x-4">
+        {website.isActive ? (
           <Button
             variant="outline"
             onClick={handlePauseWebsite}
             title="Pause Monitoring"
-            disabled={resume}
           >
-            <Pause className="h-4 w-4" />
+            <Pause className="mr-2 h-4 w-4" /> Pause Monitoring
           </Button>
+        ) : (
           <Button
             variant="outline"
             onClick={handleResumeWebsite}
             title="Resume Monitoring"
-            disabled={pause}
           >
-            <Play className="h-4 w-4" />
+            <Play className="mr-2 h-4 w-4" /> Resume Monitoring
           </Button>
-        </div>
+        )}
       </div>
 
       <StatusTimeline checks={website.checks} interval={website.interval} />
@@ -89,6 +85,11 @@ export default function WebsiteDetails() {
       <StatsGrid checks={website.checks} />
 
       <ResponseTimeChart checks={website.checks} />
+
+      <div className="space-y-2">
+        <h2 className="text-2xl font-bold">Logs</h2>
+        <LogDisplay projectId={website.id} />
+      </div>
     </div>
   );
 }
