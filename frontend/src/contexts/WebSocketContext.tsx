@@ -51,7 +51,7 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({
   const isInitialMount = useRef(true);
 
   useEffect(() => {
-    if (sessionId !== null) {
+    if (sessionId) {
       setSocketUrl(
         `ws://${process.env.API_BASE_ENDPOINT}/ws?sessionId=${sessionId}`
       );
@@ -141,22 +141,23 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({
           syncRunningWebsites(data);
         } else {
           // Handle regular messages
-          const check = {
-            timestamp: new Date().toISOString(),
-            responseTime: data.responseTime,
-            statusCode: data.statusCode,
-          };
-          updateWebsiteCheck(data.projectId, check);
+          if (data.action === "check") {
+            const check = {
+              timestamp: new Date().toISOString(),
+              responseTime: data.responseTime,
+              statusCode: data.statusCode,
+            };
+            updateWebsiteCheck(data.projectId, check);
 
-          if (data.statusCode !== 200) {
-            const website = websitesRef.current.find(
-              (w) => w.id === data.projectId
-            );
-            if (website) {
-              showLimitedToast(website.url, data.statusCode);
+            if (data.statusCode !== 200) {
+              const website = websitesRef.current.find(
+                (w) => w.id === data.projectId
+              );
+              if (website) {
+                showLimitedToast(website.url, data.statusCode);
+              }
             }
-          }
-          if (data.action === "pause") {
+          } else if (data.action === "pause") {
             pauseWebsite(data.projectId);
           } else if (data.action === "resume") {
             resumeWebsite(data.projectId);
@@ -225,33 +226,20 @@ export const useWebSocketContext = () => {
 
 export const useWebsiteLogs = (projectId: string) => {
   const [logs, setLogs] = useState<Log[]>([]);
-  const socketRef = useRef<WebSocket | null>(null);
-  const sessionId = localStorage.getItem(STORAGE_KEY);
-
   useEffect(() => {
-    const url = `ws://${process.env.API_BASE_ENDPOINT}/ws/${projectId}/log`;
+    const logSocket = new WebSocket(
+      `ws://${process.env.API_BASE_ENDPOINT}/ws/${projectId}/log`
+    );
 
-    socketRef.current = new WebSocket(url);
-
-    socketRef.current.onmessage = (event) => {
-      const newLogs = JSON.parse(event.data);
-      setLogs((prevLogs) => {
-        if (Array.isArray(newLogs)) {
-          // Initial batch of logs
-          return newLogs;
-        } else {
-          // Single new log
-          return [newLogs, ...prevLogs];
-        }
-      });
+    logSocket.onmessage = (event) => {
+      const log = JSON.parse(event.data);
+      setLogs((prevLogs) => [...prevLogs, log]);
     };
 
     return () => {
-      if (socketRef.current) {
-        socketRef.current.close();
-      }
+      logSocket.close();
     };
-  }, [projectId, sessionId]);
+  }, [projectId]);
 
   return logs;
 };

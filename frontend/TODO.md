@@ -1,3 +1,4 @@
-- [ ] Use data from /ws/{projectId}/log to plant all data at dedicated dashboard
-- [ ] make sure all data is updating correctly as its coming from /ws/{projectId}/log endpoint
+- [x] Use data from /ws/{projectId}/log to plant all data at dedicated dashboard
+- [x] make sure all data is updating correctly as its coming from /ws/{projectId}/log endpoint
 - [ ] handle pause, resume, and stop functionality with their state
+- [ ] make dashboard entries update as data is coming from backend

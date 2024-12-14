@@ -19,6 +19,19 @@ import { PlusCircle, Pause, Play, AlertTriangle } from "lucide-react";
 import AddWebsiteDialog from "@/components/AddWebsiteDialog";
 import StatusIndicator from "@/components/StatusIndicator";
 
+const intervalToNumber = (interval: string) => {
+  switch (interval) {
+    case "ONE":
+      return 1;
+    case "THREE":
+      return 3;
+    case "FIVE":
+      return 5;
+    default:
+      return parseInt(interval) || 0;
+  }
+};
+
 export default function Dashboard() {
   const { websites } = useStore();
   const { sendMessage, readyState } = useWebSocketContext();
@@ -126,11 +139,12 @@ export default function Dashboard() {
                   const latestCheck = website.checks[0];
                   return (
                     <TableRow key={website.id}>
-                      <TableCell>
+                      <TableCell className="p-5">
                         <StatusIndicator
                           isActive={
                             website.isActive && latestCheck?.statusCode === 200
                           }
+                          size="lg"
                         />
                       </TableCell>
                       <TableCell>
@@ -156,7 +170,9 @@ export default function Dashboard() {
                           {latestCheck?.statusCode ?? "N/A"}
                         </span>
                       </TableCell>
-                      <TableCell>{website.interval}</TableCell>
+                      <TableCell>
+                        {intervalToNumber(website.interval)} min
+                      </TableCell>
                       <TableCell>
                         {website.isActive ? (
                           <Button

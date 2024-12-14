@@ -12,7 +12,7 @@ type StatsGridProps = {
 };
 
 export function StatsGrid({ checks }: StatsGridProps) {
-  const lastCheck = checks[checks.length - 1];
+  const lastCheck = checks[0];
   const last24Hours = checks.filter(
     (check) =>
       new Date(check.timestamp).getTime() > Date.now() - 24 * 60 * 60 * 1000
@@ -50,7 +50,7 @@ export function StatsGrid({ checks }: StatsGridProps) {
           <p
             className={cn(
               "text-sm mt-1",
-              currentStatusCode === 200 ? "text-green-600" : "text-red-600"
+              currentStatusCode !== 200 ? "text-red-600" : "text-green-600"
             )}
           >
             Status: {currentStatusCode}

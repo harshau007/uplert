@@ -21,27 +21,26 @@ type ResponseTimeChartProps = {
 };
 
 export function ResponseTimeChart({ checks }: ResponseTimeChartProps) {
-  const last2Hours = checks.filter(
-    (check) =>
-      new Date(check.timestamp).getTime() > Date.now() - 2 * 60 * 60 * 1000
-  );
+  const last2Hours = checks
+    .filter(
+      (check) =>
+        new Date(check.timestamp).getTime() > Date.now() - 2 * 60 * 60 * 1000
+    )
+    .reverse();
 
-  // Find downtime periods
-  const downtimePeriods = last2Hours.reduce((periods: any[], check, index) => {
-    if (check.statusCode !== 200 && index > 0) {
+  const downtimePeriods = last2Hours.reduce((periods: any[], check) => {
+    if (check.statusCode < 200 || check.statusCode >= 300) {
       if (periods.length > 0 && !periods[periods.length - 1].end) {
-        // Extend current period
         return periods;
       }
-      // Start new period
       return [...periods, { start: check.timestamp, end: null }];
     }
     if (
-      check.statusCode === 200 &&
+      check.statusCode >= 200 &&
+      check.statusCode < 300 &&
       periods.length > 0 &&
       !periods[periods.length - 1].end
     ) {
-      // End current period
       periods[periods.length - 1].end = check.timestamp;
     }
     return periods;
@@ -70,6 +69,12 @@ export function ResponseTimeChart({ checks }: ResponseTimeChartProps) {
               />
               <Tooltip
                 labelFormatter={(label) => new Date(label).toLocaleString()}
+                formatter={(value, name) => {
+                  if (name === "responseTime") {
+                    return [`${value}ms`, "Response Time"];
+                  }
+                  return ["", ""];
+                }}
               />
               {downtimePeriods.map((period: any, index: number) => (
                 <ReferenceArea

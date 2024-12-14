@@ -4,26 +4,27 @@ import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import StatusIndicator from "./StatusIndicator";
 
-type StatusTimelineProps = {
-  checks: Array<{
-    timestamp: string;
-    statusCode: number;
-  }>;
-  className?: string;
-  interval?: string;
+type Check = {
+  timestamp: string;
+  statusCode: number;
 };
 
-export function StatusTimeline({
-  checks,
-  className,
-  interval,
-}: StatusTimelineProps) {
-  const recentChecks = checks.slice(-32);
+type StatusTimelineProps = {
+  checks: Check[];
+  interval?: number;
+  className?: string;
+};
+
+export function StatusTimeline({ checks, className }: StatusTimelineProps) {
+  const recentChecks = checks.slice(0, 32).reverse();
   const lastCheck = recentChecks[recentChecks.length - 1];
   const timeAgo =
     recentChecks.length > 0
-      ? new Date(recentChecks[0].timestamp).toLocaleTimeString()
+      ? new Date(
+          recentChecks[recentChecks.length - 1].timestamp
+        ).toLocaleTimeString()
       : "";
+  const now = new Date().toLocaleTimeString();
 
   return (
     <Card className={cn("p-6", className)}>
@@ -41,25 +42,20 @@ export function StatusTimeline({
             ))}
           </div>
         </div>
-
-        <StatusIndicator isActive={lastCheck?.statusCode === 200} size="lg" />
-        {/* <div
+        <div
           className={cn(
-            "px-3 py-1 rounded-full text-sm font-medium",
+            "px-1 py-1 rounded-full text-sm font-medium",
             lastCheck?.statusCode === 200
               ? "bg-green-100 text-green-700"
               : "bg-red-100 text-red-700"
           )}
         >
-          {lastCheck?.statusCode === 200 ? "Up" : "Down"}
-        </div> */}
+          <StatusIndicator isActive={lastCheck?.statusCode === 200} size="lg" />
+        </div>
       </div>
       <div className="flex justify-between text-sm text-muted-foreground">
         <span>{timeAgo}</span>
-        <span>now</span>
-      </div>
-      <div className="mt-2 text-sm text-muted-foreground">
-        Check every {interval} seconds
+        <span>{now}</span>
       </div>
     </Card>
   );

@@ -5,18 +5,48 @@ import { ResponseTimeChart } from "@/components/ResponseTimeChart";
 import { StatsGrid } from "@/components/StatsGrid";
 import { StatusTimeline } from "@/components/StatusTimeline";
 import { Button } from "@/components/ui/button";
-import { useWebSocketContext } from "@/contexts/WebSocketContext";
+import {
+  useWebSocketContext,
+  useWebsiteLogs,
+} from "@/contexts/WebSocketContext";
 import { useStore } from "@/store/useStore";
 import { ArrowLeft, Pause, Play } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
+import { useEffect } from "react";
+
+const intervalToNumber = (interval: string) => {
+  switch (interval) {
+    case "ONE":
+      return 1;
+    case "THREE":
+      return 3;
+    case "FIVE":
+      return 5;
+    default:
+      return parseInt(interval) || 0;
+  }
+};
 
 export default function WebsiteDetails() {
   const { id } = useParams();
-  const { websites } = useStore();
+  const { websites, updateWebsiteCheck } = useStore();
   const { sendMessage } = useWebSocketContext();
+  const logs = useWebsiteLogs(id as string);
 
   const website = websites.find((w) => w.id === id);
+
+  useEffect(() => {
+    if (logs.length > 0) {
+      logs.forEach((log) => {
+        updateWebsiteCheck(id as string, {
+          timestamp: log.timestamp,
+          responseTime: log.responseTime,
+          statusCode: log.statusCode,
+        });
+      });
+    }
+  }, [logs, id, updateWebsiteCheck]);
 
   const handlePauseWebsite = () => {
     if (website) {
@@ -55,30 +85,31 @@ export default function WebsiteDetails() {
         <div className="flex items-center space-x-4">
           <Link href="/">
             <Button variant="outline">
-              <ArrowLeft className="mr-2 h-4 w-4" /> Back to Dashboard
+              <ArrowLeft className="mr-2 h-4 w-4" /> Back
             </Button>
           </Link>
           <h1 className="text-3xl font-bold">{website.url}</h1>
         </div>
-        <div className="flex items-center space-x-4">
+        {website.isActive ? (
           <Button
             variant="outline"
             onClick={handlePauseWebsite}
             title="Pause Monitoring"
           >
-            <Pause className="h-4 w-4" />
+            <Pause className="mr-2 h-4 w-4" /> Pause Monitoring
           </Button>
+        ) : (
           <Button
             variant="outline"
             onClick={handleResumeWebsite}
             title="Resume Monitoring"
           >
-            <Play className="h-4 w-4" />
+            <Play className="mr-2 h-4 w-4" /> Resume Monitoring
           </Button>
-        </div>
+        )}
       </div>
 
-      <StatusTimeline checks={website.checks} interval={website.interval} />
+      <StatusTimeline checks={website.checks} />
 
       <StatsGrid checks={website.checks} />
 
@@ -86,7 +117,10 @@ export default function WebsiteDetails() {
 
       <div className="space-y-2">
         <h2 className="text-2xl font-bold">Logs</h2>
-        <LogDisplay projectId={website.id} />
+        <p>
+          Check interval: Every {intervalToNumber(website.interval)} minute(s)
+        </p>
+        <LogDisplay logs={logs} />
       </div>
     </div>
   );

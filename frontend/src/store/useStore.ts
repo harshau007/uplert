@@ -33,9 +33,10 @@ type State = {
   syncRunningWebsites: (runningWebsites: RunningWebsite[]) => void;
   pauseAllWebsites: () => void;
   resumeAllWebsites: () => void;
+  getWebsiteById: (id: string) => Website | undefined;
 };
 
-export const useStore = create<State>((set) => ({
+export const useStore = create<State>((set, get) => ({
   websites: [],
   addWebsite: (url, interval) => {
     const id = uuidv4();
@@ -115,4 +116,7 @@ export const useStore = create<State>((set) => ({
         isActive: true,
       })),
     })),
+  getWebsiteById: (id) => {
+    return get().websites.find((website) => website.id === id);
+  },
 }));
