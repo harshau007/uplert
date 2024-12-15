@@ -140,24 +140,22 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({
           // This is the initial message with running websites
           syncRunningWebsites(data);
         } else {
-          // Handle regular messages
-          if (data.action === "check") {
-            const check = {
-              timestamp: new Date().toISOString(),
-              responseTime: data.responseTime,
-              statusCode: data.statusCode,
-            };
-            updateWebsiteCheck(data.projectId, check);
+          const check = {
+            timestamp: new Date().toISOString(),
+            responseTime: data.responseTime,
+            statusCode: data.statusCode,
+          };
+          updateWebsiteCheck(data.projectId, check);
 
-            if (data.statusCode !== 200) {
-              const website = websitesRef.current.find(
-                (w) => w.id === data.projectId
-              );
-              if (website) {
-                showLimitedToast(website.url, data.statusCode);
-              }
+          if (data.statusCode !== 200) {
+            const website = websitesRef.current.find(
+              (w) => w.id === data.projectId
+            );
+            if (website) {
+              showLimitedToast(website.url, data.statusCode);
             }
-          } else if (data.action === "pause") {
+          }
+          if (data.action === "pause") {
             pauseWebsite(data.projectId);
           } else if (data.action === "resume") {
             resumeWebsite(data.projectId);
@@ -234,10 +232,6 @@ export const useWebsiteLogs = (projectId: string) => {
     logSocket.onmessage = (event) => {
       const log = JSON.parse(event.data);
       setLogs((prevLogs) => [...prevLogs, log]);
-    };
-
-    return () => {
-      logSocket.close();
     };
   }, [projectId]);
 

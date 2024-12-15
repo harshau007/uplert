@@ -1,4 +1,0 @@
-- [x] implement log route for separate path for logs and other details
-- [ ] implement pause & resume feature
-- [x] persistence data for dashboard to keep record 
-- [ ] cover session close since after connection established is not being used now

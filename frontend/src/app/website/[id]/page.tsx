@@ -17,12 +17,12 @@ import { useEffect } from "react";
 
 const intervalToNumber = (interval: string) => {
   switch (interval) {
-    case "ONE":
-      return 1;
-    case "THREE":
-      return 3;
-    case "FIVE":
-      return 5;
+    case "TEN":
+      return 10;
+    case "THIRTY":
+      return 30;
+    case "SIXTY":
+      return 60;
     default:
       return parseInt(interval) || 0;
   }
@@ -118,7 +118,7 @@ export default function WebsiteDetails() {
       <div className="space-y-2">
         <h2 className="text-2xl font-bold">Logs</h2>
         <p>
-          Check interval: Every {intervalToNumber(website.interval)} minute(s)
+          Check interval: Every {intervalToNumber(website.interval)} second(s)
         </p>
         <LogDisplay logs={logs} />
       </div>

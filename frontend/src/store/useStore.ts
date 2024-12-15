@@ -34,6 +34,7 @@ type State = {
   pauseAllWebsites: () => void;
   resumeAllWebsites: () => void;
   getWebsiteById: (id: string) => Website | undefined;
+  deleteWebsite: (id: string) => void;
 };
 
 export const useStore = create<State>((set, get) => ({
@@ -119,4 +120,8 @@ export const useStore = create<State>((set, get) => ({
   getWebsiteById: (id) => {
     return get().websites.find((website) => website.id === id);
   },
+  deleteWebsite: (id) =>
+    set((state) => ({
+      websites: state.websites.filter((website) => website.id !== id),
+    })),
 }));

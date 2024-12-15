@@ -3,6 +3,7 @@ package com.github.uplert.service;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.uplert.domain.MonitorRequest;
+import com.github.uplert.domain.MonitoringLog;
 import com.github.uplert.domain.MonitoringSites;
 import com.github.uplert.model.MonitorRequestDTO;
 import com.github.uplert.model.MonitoringSitesDTO;
@@ -12,12 +13,14 @@ import com.github.uplert.repos.MonitoringSitesRepository;
 import com.github.uplert.util.NotFoundException;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.*;
 
 import com.mongodb.MongoInterruptedException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
+import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
 
 @Slf4j
@@ -72,7 +75,6 @@ public class MonitorRequestService {
 
     private MonitorRequestDTO mapToDTO(final MonitorRequest monitorRequest,
             final MonitorRequestDTO monitorRequestDTO) {
-        monitorRequestDTO.setId(monitorRequest.getId());
         monitorRequestDTO.setUserId(monitorRequest.getUserId());
         monitorRequestDTO.setProjectId(monitorRequest.getProjectId());
         monitorRequestDTO.setUrl(monitorRequest.getUrl());
@@ -114,7 +116,6 @@ public class MonitorRequestService {
         if (jobs.isEmpty()) {
             for (MonitoringSites monitoringSite : monitoringSites) {
                 startMonitoring(new MonitorRequestDTO(
-                        "",
                         1L,
                         monitoringSite.getProjectId(),
                         monitoringSite.getUrl(),
@@ -144,12 +145,73 @@ public class MonitorRequestService {
         jobs.put(monitorRequestDTO.getUrl().hashCode(), future);
     }
 
-    public void stopMonitoring(MonitorRequestDTO monitorRequestDTO) {
+//    public void stopMonitoring(MonitorRequestDTO monitorRequestDTO) {
+//        try {
+//            MonitoringSites existingSite = monitoringSitesRepository.findByUrl(monitorRequestDTO.getUrl());
+//
+//            if (existingSite.getUrl().equals(monitorRequestDTO.getUrl())) {
+//                monitoringSitesRepository.deleteById(monitoringSitesRepository.findByUrl(monitorRequestDTO.getUrl()).getId());
+//            }
+//
+//            ScheduledFuture<?> future = jobs.remove(monitorRequestDTO.getUrl().hashCode());
+//
+//            if (future != null) {
+//                try {
+//                    boolean cancelled = future.cancel(true);
+//
+//                    if (cancelled) {
+//                        log.info("Monitoring stopped for URL: {}", monitorRequestDTO.getUrl());
+//                    } else {
+//                        log.warn("Could not cancel monitoring job for URL: {}", monitorRequestDTO.getUrl());
+//                    }
+//                } catch (Exception cancellationEx) {
+//                    log.error("Error cancelling monitoring job for URL: {}", monitorRequestDTO.getUrl(), cancellationEx);
+//                }
+//            } else {
+//                log.warn("No scheduled job found for URL: {}", monitorRequestDTO.getUrl());
+//            }
+//        } catch (MongoInterruptedException e) {
+//            log.error("MongoDB interruption while stopping monitoring for URL: {}", monitorRequestDTO.getUrl(), e);
+//
+//            try {
+//                jobs.remove(monitorRequestDTO.getUrl().hashCode());
+//            } catch (Exception recoveryEx) {
+//                log.error("Recovery attempt failed", recoveryEx);
+//            }
+//
+//            throw new RuntimeException("Failed to stop monitoring", e);
+//        } catch (Exception e) {
+//            log.error("Unexpected error stopping monitoring for URL: {}", monitorRequestDTO.getUrl(), e);
+//            throw new RuntimeException("Unexpected error stopping monitoring", e);
+//        }
+//    }
+
+    public void pauseMonitoring(MonitorRequestDTO monitorRequestDTO) {
+        ScheduledFuture<?> future = jobs.get(monitorRequestDTO.getUrl().hashCode());
+        pausedMonitorRequests.put(monitorRequestDTO.getUrl().hashCode(), monitorRequestDTO);
+        pauseJobs.put(monitorRequestDTO.getUrl().hashCode(), future);
+        jobs.remove(monitorRequestDTO.getUrl().hashCode());
+        if(future != null){
+            future.cancel(false);
+            try{
+                future.get();
+            } catch (InterruptedException | ExecutionException | CancellationException e){
+                System.out.println(e.getMessage());
+            }
+        }
+    }
+
+    public void deleteMonitoringEntry(MonitorRequestDTO monitorRequestDTO, WebSocketSession session) {
         try {
             MonitoringSites existingSite = monitoringSitesRepository.findByUrl(monitorRequestDTO.getUrl());
 
             if (existingSite.getUrl().equals(monitorRequestDTO.getUrl())) {
                 monitoringSitesRepository.deleteById(monitoringSitesRepository.findByUrl(monitorRequestDTO.getUrl()).getId());
+            }
+
+            Optional<MonitoringLog> monitoringLog = monitoringLogRepository.findByProjectId(monitorRequestDTO.getProjectId());
+            if (monitoringLog.isPresent() && monitoringLog.get().getProjectId().equals(existingSite.getProjectId())) {
+                monitoringLogRepository.deleteById(monitoringLog.get().getId());
             }
 
             ScheduledFuture<?> future = jobs.remove(monitorRequestDTO.getUrl().hashCode());
@@ -182,21 +244,6 @@ public class MonitorRequestService {
         } catch (Exception e) {
             log.error("Unexpected error stopping monitoring for URL: {}", monitorRequestDTO.getUrl(), e);
             throw new RuntimeException("Unexpected error stopping monitoring", e);
-        }
-    }
-
-    public void pauseMonitoring(MonitorRequestDTO monitorRequestDTO) {
-        ScheduledFuture<?> future = jobs.get(monitorRequestDTO.getUrl().hashCode());
-        pausedMonitorRequests.put(monitorRequestDTO.getUrl().hashCode(), monitorRequestDTO);
-        pauseJobs.put(monitorRequestDTO.getUrl().hashCode(), future);
-        jobs.remove(monitorRequestDTO.getUrl().hashCode());
-        if(future != null){
-            future.cancel(false);
-            try{
-                future.get();
-            } catch (InterruptedException | ExecutionException | CancellationException e){
-                System.out.println(e.getMessage());
-            }
         }
     }
 

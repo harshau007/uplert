@@ -11,7 +11,6 @@ import org.springframework.web.socket.handler.TextWebSocketHandler;
 
 import java.io.IOException;
 import java.util.Map;
-import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 
 @Component
@@ -64,8 +63,8 @@ public class WebSocketHandler extends TextWebSocketHandler {
                     handleStartAction(session, json, gson);
                     break;
 
-                case "stop":
-                    handleStopAction(session, json, gson);
+                case "delete":
+                    handleDeleteAction(session, json, gson);
                     break;
 
                 case "pause":
@@ -147,7 +146,7 @@ public class WebSocketHandler extends TextWebSocketHandler {
         }
     }
 
-    private void handleStopAction(WebSocketSession session, JsonObject json, Gson gson) {
+    private void handleDeleteAction(WebSocketSession session, JsonObject json, Gson gson) {
         try {
             String sessionId = extractSessionId(session);
             if (!json.has("website")) {
@@ -158,18 +157,13 @@ public class WebSocketHandler extends TextWebSocketHandler {
             JsonObject websiteJson = json.getAsJsonObject("website");
             MonitorRequestDTO monitorRequest = gson.fromJson(websiteJson, MonitorRequestDTO.class);
 
-            if (monitorRequest.getId() == null || monitorRequest.getId().isEmpty()) {
-                sendErrorMessage(session, "Invalid request ID provided");
-                return;
-            }
-
             synchronized (userSessions.get(sessionId)) {
-                monitorRequestService.stopMonitoring(monitorRequest);
+                monitorRequestService.deleteMonitoringEntry(monitorRequest, session);
             }
             session.sendMessage(new TextMessage("Monitoring stopped for: " + monitorRequest.getUrl()));
         } catch (Exception e) {
             sendErrorMessage(session, "Failed to stop monitoring: " + e.getMessage());
-            System.err.println("Error in handleStopAction: " + e.getMessage());
+            System.err.println("Error in handleDeleteAction: " + e.getMessage());
         }
     }
 

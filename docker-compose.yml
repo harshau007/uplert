@@ -48,6 +48,7 @@ services:
     labels:
       - createdBy=uplert
 
+# Remove this since in prod not required
   mongo-express:
     image: mongo-express:1-20-alpine3.19
     container_name: mongoexpress

@@ -30,13 +30,13 @@ export default function AddWebsiteDialog({
   onAdd,
 }: AddWebsiteDialogProps) {
   const [url, setUrl] = useState("");
-  const [interval, setInterval] = useState("THREE");
+  const [interval, setInterval] = useState("THIRTY");
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     onAdd(url, interval);
     setUrl("");
-    setInterval("THREE");
+    setInterval("THIRTY");
     onOpenChange(false);
   };
 
@@ -65,9 +65,9 @@ export default function AddWebsiteDialog({
                 <SelectValue placeholder="Select interval" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="ONE">One Minute</SelectItem>
-                <SelectItem value="THREE">Three Minutes</SelectItem>
-                <SelectItem value="FIVE">Five Minutes</SelectItem>
+                <SelectItem value="TEN">10 Seconds</SelectItem>
+                <SelectItem value="THIRTY">30 Seconds</SelectItem>
+                <SelectItem value="SIXTY">60 Seconds</SelectItem>
               </SelectContent>
             </Select>
           </div>
