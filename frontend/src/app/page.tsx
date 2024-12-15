@@ -153,7 +153,7 @@ export default function Dashboard() {
           {readyState === ReadyState.OPEN ? (
             <>
               {websites.length === 0 ? (
-                <div className="text-center py-8">
+                <div className="text-center py-8 select-none">
                   <p className="text-xl font-semibold">
                     No websites to monitor
                   </p>

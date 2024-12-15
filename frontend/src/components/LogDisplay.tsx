@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import {
   Pagination,
   PaginationContent,
+  PaginationEllipsis,
   PaginationItem,
   PaginationLink,
   PaginationNext,
@@ -40,14 +41,21 @@ type LogDisplayProps = {
 };
 
 export function LogDisplay({ logs }: LogDisplayProps) {
-  // Ensure logs are limited to 100
-  const limitedLogs = logs.slice(-100);
+  // Remove duplicates by creating a Set based on unique keys
+  const limitedLogs = useMemo(() => {
+    const uniqueLogs = new Map();
+    logs.slice(-100).forEach((log) => {
+      const key = `${log.timestamp}-${log.website}`;
+      uniqueLogs.set(key, log);
+    });
+    return Array.from(uniqueLogs.values());
+  }, [logs]);
 
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
   const [currentPage, setCurrentPage] = useState(1);
-  const logsPerPage = 5;
+  const logsPerPage = 10;
 
   const filteredAndSortedLogs = useMemo(() => {
     return limitedLogs
@@ -80,13 +88,43 @@ export function LogDisplay({ logs }: LogDisplayProps) {
     currentPage * logsPerPage
   );
 
+  const renderPagination = () => {
+    const paginationItems = [];
+
+    for (let i = 1; i <= totalPages; i++) {
+      if (
+        i === 1 ||
+        i === totalPages ||
+        (i >= currentPage - 1 && i <= currentPage + 1)
+      ) {
+        paginationItems.push(
+          <PaginationItem key={i} className="hover:cursor-pointer">
+            <PaginationLink
+              onClick={() => setCurrentPage(i)}
+              isActive={currentPage === i}
+            >
+              {i}
+            </PaginationLink>
+          </PaginationItem>
+        );
+      } else if (
+        i === currentPage - 2 ||
+        i === currentPage + 2 ||
+        paginationItems[paginationItems.length - 1]?.props.children !== "..."
+      ) {
+        paginationItems.push(
+          <PaginationItem key={`dots-${i}`} className="hover:cursor-pointer">
+            <PaginationEllipsis />
+          </PaginationItem>
+        );
+      }
+    }
+    return paginationItems;
+  };
+
   return (
     <Card>
-      <CardHeader>
-        {/* <CardTitle className="font-mono text-sm">
-          {filteredAndSortedLogs.length} total logs found...
-        </CardTitle> */}
-      </CardHeader>
+      <CardHeader></CardHeader>
       <CardContent>
         <div className="space-y-4">
           <div className="flex items-center space-x-2">
@@ -143,9 +181,9 @@ export function LogDisplay({ logs }: LogDisplayProps) {
                   <TableHead>Status Code</TableHead>
                 </TableRow>
               </TableHeader>
-              <TableBody className="pointer-events-none">
+              <TableBody>
                 {paginatedLogs.map((log, index) => (
-                  <TableRow key={log.timestamp + index}>
+                  <TableRow key={`${log.timestamp}-${index}`}>
                     <TableCell className="font-mono">
                       {new Date(log.timestamp).toLocaleString()}
                     </TableCell>
@@ -154,7 +192,7 @@ export function LogDisplay({ logs }: LogDisplayProps) {
                     <TableCell>
                       <span
                         className={
-                          log.statusCode === 200
+                          log.statusCode >= 200 && log.statusCode < 300
                             ? "text-green-500"
                             : "text-red-500"
                         }
@@ -168,35 +206,29 @@ export function LogDisplay({ logs }: LogDisplayProps) {
             </Table>
           </div>
 
-          <Pagination>
-            <PaginationContent>
-              <PaginationItem>
-                <PaginationPrevious
-                  onClick={() =>
-                    setCurrentPage((page) => Math.max(1, page - 1))
-                  }
-                />
-              </PaginationItem>
-              {[...Array(totalPages)].map((_, index) => (
-                <PaginationItem key={index} className="hover:cursor-pointer">
-                  <PaginationLink
-                    onClick={() => setCurrentPage(index + 1)}
-                    isActive={currentPage === index + 1}
-                  >
-                    {index + 1}
-                  </PaginationLink>
+          {totalPages > 1 && (
+            <Pagination>
+              <PaginationContent>
+                <PaginationItem>
+                  <PaginationPrevious
+                    onClick={() =>
+                      setCurrentPage((page) => Math.max(1, page - 1))
+                    }
+                    className="select-none cursor-pointer"
+                  />
                 </PaginationItem>
-              ))}
-              <PaginationItem>
-                <PaginationNext
-                  onClick={() =>
-                    setCurrentPage((page) => Math.min(totalPages, page + 1))
-                  }
-                  className="hover:cursor-pointer"
-                />
-              </PaginationItem>
-            </PaginationContent>
-          </Pagination>
+                {renderPagination()}
+                <PaginationItem>
+                  <PaginationNext
+                    onClick={() =>
+                      setCurrentPage((page) => Math.min(totalPages, page + 1))
+                    }
+                    className="select-none cursor-pointer"
+                  />
+                </PaginationItem>
+              </PaginationContent>
+            </Pagination>
+          )}
         </div>
       </CardContent>
     </Card>

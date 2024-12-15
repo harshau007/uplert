@@ -27,15 +27,15 @@ export function StatusTimeline({ checks, className }: StatusTimelineProps) {
   const now = new Date().toLocaleTimeString();
 
   return (
-    <Card className={cn("p-6", className)}>
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-2">
-          <div className="flex gap-1">
+    <Card className={cn("p-4 sm:p-6", className)}>
+      <div className="flex flex-col sm:flex-row items-center justify-between mb-4 gap-4 sm:gap-6">
+        <div className="flex items-center gap-2 w-full sm:w-auto">
+          <div className="flex gap-1 overflow-x-auto max-w-full">
             {recentChecks.map((check, i) => (
               <div
                 key={i}
                 className={cn(
-                  "w-2 h-8 rounded-full",
+                  "w-2 h-6 sm:h-8 rounded-full flex-shrink-0",
                   check.statusCode === 200 ? "bg-green-500" : "bg-red-500"
                 )}
               />
@@ -44,7 +44,7 @@ export function StatusTimeline({ checks, className }: StatusTimelineProps) {
         </div>
         <div
           className={cn(
-            "px-1 py-1 rounded-full text-sm font-medium",
+            "px-2 py-1 rounded-full text-xs sm:text-sm font-medium flex-shrink-0 self-start sm:self-auto",
             lastCheck?.statusCode === 200
               ? "bg-green-100 text-green-700"
               : "bg-red-100 text-red-700"
@@ -53,7 +53,7 @@ export function StatusTimeline({ checks, className }: StatusTimelineProps) {
           <StatusIndicator isActive={lastCheck?.statusCode === 200} size="lg" />
         </div>
       </div>
-      <div className="flex justify-between text-sm text-muted-foreground">
+      <div className="flex justify-between text-xs sm:text-sm text-muted-foreground">
         <span>{timeAgo}</span>
         <span>{now}</span>
       </div>

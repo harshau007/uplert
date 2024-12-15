@@ -3,6 +3,12 @@ services:
   mongodb:
     image: mongo:4.2
     container_name: mongodb
+    deploy:
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+        window: 120s
     environment:
       - "MONGO_INITDB_ROOT_USERNAME=${DBUSER}"
       - "MONGO_INITDB_DATABASE=${DBNAME}"
@@ -19,6 +25,12 @@ services:
   backend:
     image: harshau04/uplert-backend:latest
     container_name: backend
+    deploy:
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+        window: 120s
     depends_on:
       - mongodb
     networks:

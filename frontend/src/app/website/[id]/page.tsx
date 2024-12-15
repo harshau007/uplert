@@ -108,7 +108,9 @@ export default function WebsiteDetails() {
           </Button>
         )}
       </div>
-
+      <p>
+        Check interval: Every {intervalToNumber(website.interval)} second(s)
+      </p>
       <StatusTimeline checks={website.checks} />
 
       <StatsGrid checks={website.checks} />
@@ -117,9 +119,6 @@ export default function WebsiteDetails() {
 
       <div className="space-y-2">
         <h2 className="text-2xl font-bold">Logs</h2>
-        <p>
-          Check interval: Every {intervalToNumber(website.interval)} second(s)
-        </p>
         <LogDisplay logs={logs} />
       </div>
     </div>
