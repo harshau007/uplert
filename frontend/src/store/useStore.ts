@@ -82,7 +82,7 @@ export const useStore = create<State>((set, get) => ({
         if (runningWebsite) {
           return {
             ...website,
-            isActive: runningWebsite.status === null,
+            isActive: runningWebsite.status === "ACTIVE",
             interval: runningWebsite.interval,
           };
         }
@@ -96,7 +96,7 @@ export const useStore = create<State>((set, get) => ({
           url: rw.url,
           interval: rw.interval,
           checks: [],
-          isActive: rw.status === null,
+          isActive: rw.status === "ACTIVE",
         }));
 
       return {

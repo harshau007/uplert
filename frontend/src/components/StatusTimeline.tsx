@@ -44,7 +44,7 @@ export function StatusTimeline({ checks, className }: StatusTimelineProps) {
         </div>
         <div
           className={cn(
-            "px-2 py-1 rounded-full text-xs sm:text-sm font-medium flex-shrink-0 self-start sm:self-auto",
+            "px-1 py-1 rounded-full text-xs sm:text-sm font-medium flex-shrink-0 self-start sm:self-auto",
             lastCheck?.statusCode === 200
               ? "bg-green-100 text-green-700"
               : "bg-red-100 text-red-700"

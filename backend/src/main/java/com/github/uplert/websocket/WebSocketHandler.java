@@ -1,5 +1,6 @@
 package com.github.uplert.websocket;
 
+import com.github.uplert.model.Intervals;
 import com.github.uplert.model.MonitorRequestDTO;
 import com.github.uplert.service.MonitorRequestService;
 import com.google.gson.*;
@@ -75,6 +76,10 @@ public class WebSocketHandler extends TextWebSocketHandler {
                     handleResumeAction(session, json, gson);
                     break;
 
+                case "ping":
+                    handleManualPing(session, json, gson);
+                    break;
+
                 default:
                     sendErrorMessage(session, "Unknown action: " + action);
             }
@@ -100,7 +105,7 @@ public class WebSocketHandler extends TextWebSocketHandler {
             }
 
             monitorRequestService.pauseMonitoring(monitorRequest);
-            session.sendMessage(new TextMessage("Monitoring paused for: " + monitorRequest.getUrl()));
+            session.sendMessage(new TextMessage("paused: " + monitorRequest.getUrl()));
         } catch (Exception e) {
             sendErrorMessage(session, "Invalid payload: " + e.getMessage());
         }
@@ -117,7 +122,7 @@ public class WebSocketHandler extends TextWebSocketHandler {
            MonitorRequestDTO monitorRequestURL = gson.fromJson(websiteJson, MonitorRequestDTO.class);
 
            monitorRequestService.resumeMonitoring(monitorRequestURL.getUrl(), session);
-           session.sendMessage(new TextMessage("Monitoring resumed for: " + monitorRequestURL));
+           session.sendMessage(new TextMessage("Monitoring resumed for: " + monitorRequestURL.getUrl()));
        } catch (Exception e) {
            sendErrorMessage(session, "Invalid payload: " + e.getMessage());
        }
@@ -157,6 +162,7 @@ public class WebSocketHandler extends TextWebSocketHandler {
             JsonObject websiteJson = json.getAsJsonObject("website");
             MonitorRequestDTO monitorRequest = gson.fromJson(websiteJson, MonitorRequestDTO.class);
 
+            System.out.println(websiteJson);
             synchronized (userSessions.get(sessionId)) {
                 monitorRequestService.deleteMonitoringEntry(monitorRequest, session);
             }
@@ -164,6 +170,28 @@ public class WebSocketHandler extends TextWebSocketHandler {
         } catch (Exception e) {
             sendErrorMessage(session, "Failed to stop monitoring: " + e.getMessage());
             System.err.println("Error in handleDeleteAction: " + e.getMessage());
+        }
+    }
+
+    private void handleManualPing(WebSocketSession session, JsonObject json, Gson gson) {
+        try {
+            if (!json.has("website")) {
+                sendErrorMessage(session, "Missing 'website' field in start action");
+                return;
+            }
+
+            JsonObject websiteJson = json.getAsJsonObject("website");
+            MonitorRequestDTO monitorRequest = gson.fromJson(websiteJson, MonitorRequestDTO.class);
+
+            if (!validateMonitorRequest(monitorRequest)) {
+                sendErrorMessage(session, "Invalid website details provided");
+                return;
+            }
+
+            monitorRequestService.manualPing(monitorRequest, session);
+        } catch (Exception e) {
+            sendErrorMessage(session, "Failed to start monitoring: " + e.getMessage());
+            System.err.println("Error in handleStartAction: " + e.getMessage());
         }
     }
 
@@ -176,9 +204,9 @@ public class WebSocketHandler extends TextWebSocketHandler {
     }
 
     private boolean validateMonitorRequest(MonitorRequestDTO request) {
-        if (request == null || request.getUserId() == null || request.getUserId() <= 0) {
-            return false;
-        }
+//        if (request == null || request.getUserId() == null || request.getUserId() <= 0) {
+//            return false;
+//        }
         if (request.getProjectId() == null || request.getProjectId().isEmpty()) {
             return false;
         }

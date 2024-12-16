@@ -2,15 +2,9 @@ package com.github.uplert.domain;
 
 import com.github.uplert.model.Intervals;
 import com.github.uplert.model.Status;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
 import jakarta.persistence.EntityListeners;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.SequenceGenerator;
-import jakarta.persistence.Table;
 import java.time.OffsetDateTime;
 
 import lombok.Getter;
@@ -44,8 +38,6 @@ public class MonitorRequest {
 
     @Enumerated(EnumType.STRING)
     private Status status;
-
-    private Boolean isPaused;
 
     @CreatedDate
     private OffsetDateTime dateCreated;

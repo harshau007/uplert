@@ -180,10 +180,7 @@ export default function Dashboard() {
                         <TableRow key={website.id}>
                           <TableCell className="p-5">
                             <StatusIndicator
-                              isActive={
-                                website.isActive &&
-                                latestCheck?.statusCode === 200
-                              }
+                              isActive={latestCheck?.statusCode === 200}
                               size="lg"
                             />
                           </TableCell>
@@ -228,37 +225,6 @@ export default function Dashboard() {
                             >
                               <Trash2Icon className="h-4 w-4" />
                             </Button>
-                            {/* {website.isActive ? (
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() =>
-                              handlePauseWebsite(
-                                website.id,
-                                website.url,
-                                website.interval
-                              )
-                            }
-                            title="Pause Monitoring"
-                          >
-                            <Pause className="h-4 w-4" />
-                          </Button>
-                        ) : (
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() =>
-                              handleResumeWebsite(
-                                website.id,
-                                website.url,
-                                website.interval
-                              )
-                            }
-                            title="Resume Monitoring"
-                          >
-                            <Play className="h-4 w-4" />
-                          </Button>
-                        )} */}
                           </TableCell>
                         </TableRow>
                       );

@@ -1,8 +1,10 @@
 package com.github.uplert.service;
 
 import com.github.uplert.domain.MonitoringLog;
+import com.github.uplert.domain.MonitoringSites;
 import com.github.uplert.model.MonitorRequestDTO;
 import com.github.uplert.repos.MonitoringLogRepository;
+import com.github.uplert.repos.MonitoringSitesRepository;
 import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
 
@@ -17,11 +19,13 @@ public class MonitoringJobService implements Runnable{
     private final MonitorRequestDTO website;
     private final WebSocketSession session;
     private final MonitoringLogRepository monitoringLogRepository;
+    private final MonitoringSitesRepository monitoringSitesRepository;
 
-    public MonitoringJobService(MonitorRequestDTO website, WebSocketSession session, MonitoringLogRepository monitoringLogRepository) {
+    public MonitoringJobService(MonitorRequestDTO website, WebSocketSession session, MonitoringLogRepository monitoringLogRepository, MonitoringSitesRepository monitoringSitesRepository) {
         this.website = website;
         this.session = session;
         this.monitoringLogRepository = monitoringLogRepository;
+        this.monitoringSitesRepository = monitoringSitesRepository;
     }
 
     @Override
@@ -32,9 +36,11 @@ public class MonitoringJobService implements Runnable{
             connection.setRequestMethod("GET");
             int statusCode = connection.getResponseCode();
             long responseTime = System.currentTimeMillis() - startTime;
+
             SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ");
             sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
             String timestamp = sdf.format(new Date(System.currentTimeMillis()));
+
             MonitoringLog.LogEntry logEntry = new MonitoringLog.LogEntry(
                     website.getUrl(), timestamp,responseTime, statusCode
             );
@@ -45,12 +51,15 @@ public class MonitoringJobService implements Runnable{
 
             monitoringLog.addLogEntry(logEntry);
 
-            MonitoringLog monitoringLog1 = monitoringLogRepository.save(monitoringLog);
-            System.out.println(monitoringLog1);
+            monitoringLogRepository.save(monitoringLog);
+
+            MonitoringSites monitoringSites = monitoringSitesRepository.findByUrl(website.getUrl());
+
+            System.out.println("Status: "+ monitoringSites.getStatus());
 
             String logMessage = String.format(
-                    "{\"website\":\"%s\",\"projectId\":\"%s\",\"responseTime\":%d,\"statusCode\":%d}",
-                    website.getUrl(), website.getProjectId(), responseTime, statusCode
+                    "{\"website\":\"%s\",\"projectId\":\"%s\",\"status\":\"%s\",\"responseTime\":%d,\"statusCode\":%d}",
+                    website.getUrl(), monitoringSites.getProjectId(), monitoringSites.getStatus(),responseTime, statusCode
             );
             this.notifyUser(logMessage);
         } catch (Exception e) {

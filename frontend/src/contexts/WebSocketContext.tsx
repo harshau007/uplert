@@ -133,6 +133,7 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({
     if (lastMessage) {
       try {
         const data = JSON.parse(lastMessage.data);
+        console.log(data);
         if (data.sessionId && !sessionId) {
           setSessionId(data.sessionId);
           localStorage.setItem(STORAGE_KEY, data.sessionId);
@@ -156,7 +157,8 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({
             }
           }
           if (data.action === "pause") {
-            pauseWebsite(data.projectId);
+            // pauseWebsite(data.projectId);
+            console.log(data);
           } else if (data.action === "resume") {
             resumeWebsite(data.projectId);
           }

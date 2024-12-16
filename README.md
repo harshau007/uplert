@@ -45,15 +45,28 @@ Before running the application, ensure you have the following installed:
 
 The following features are planned but not yet implemented:
 
-- [ ] **Persistent Data Storage**: Save monitoring results and settings across sessions.
-- [ ] **Alerting System**: Notify users via email or SMS when websites go down.
-- [ ] **Historical Data View**: Provide a detailed history of uptime statistics for monitored websites.
-- [ ] **Customizable Monitoring Intervals**: Allow users to set intervals for monitoring specific websites.
+- [ ] **Pause & Resume Functionality**: Enable users to pause and resume monitoring with proper state handling.
+- [ ] **Validation for Website Dialog**: Prevent duplicate endpoints when creating monitoring entries.
+- [ ] **Backend Validation**: Validate website URLs at the backend and send validation results to the frontend.
+- [ ] **Session Close Handling**: Properly handle session closure for established connections.
+- [ ] **Incident Response**: Integrate notifications via Email, Slack, Discord, SMS, etc.
+- [ ] **Email Integration**: Implement emailing functionality using Mailhog or other tools.
 
 Currently implemented features:
 
-- [x] **Monitoring of websites.**
-- [x] **WebSocket communication for real-time updates.**
+### Frontend
+
+- [x] **Data Streaming**: Use data from `/ws/{projectId}/log` to populate the dashboard.
+- [x] **Real-time Updates**: Ensure data updates correctly from the WebSocket endpoint.
+- [x] **Delete Functionality**: Handle deletion with proper state management.
+- [x] **Manual Ping**: Allow users to manually check website status.
+- [x] **Duplicate Logs Handling**: Prevent duplicate logs and stats from being displayed.
+
+### Backend
+
+- [x] **Log Route**: Implement a separate route for logs and related details.
+- [x] **Persistence**: Store dashboard data to maintain records.
+- [x] **Manual Ping**: Support manual pings from the backend.
 
 ---
 

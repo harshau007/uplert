@@ -19,8 +19,8 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 public class MonitorRequestDTO {
-    @NotNull
-    private Long userId;
+//    @NotNull
+//    private Long userId;
 
     @NotNull
     private String projectId;
@@ -34,6 +34,4 @@ public class MonitorRequestDTO {
     private Intervals interval;
 
     private Status status;
-
-    private Boolean isPaused;
 }

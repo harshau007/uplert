@@ -7,10 +7,13 @@ import com.github.uplert.domain.MonitoringLog;
 import com.github.uplert.domain.MonitoringSites;
 import com.github.uplert.model.MonitorRequestDTO;
 import com.github.uplert.model.MonitoringSitesDTO;
+import com.github.uplert.model.Status;
 import com.github.uplert.repos.MonitorRequestRepository;
 import com.github.uplert.repos.MonitoringLogRepository;
 import com.github.uplert.repos.MonitoringSitesRepository;
 import com.github.uplert.util.NotFoundException;
+
+import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -75,7 +78,6 @@ public class MonitorRequestService {
 
     private MonitorRequestDTO mapToDTO(final MonitorRequest monitorRequest,
             final MonitorRequestDTO monitorRequestDTO) {
-        monitorRequestDTO.setUserId(monitorRequest.getUserId());
         monitorRequestDTO.setProjectId(monitorRequest.getProjectId());
         monitorRequestDTO.setUrl(monitorRequest.getUrl());
         monitorRequestDTO.setInterval(monitorRequest.getInterval());
@@ -85,7 +87,6 @@ public class MonitorRequestService {
 
     private MonitorRequest mapToEntity(final MonitorRequestDTO monitorRequestDTO,
             final MonitorRequest monitorRequest) {
-        monitorRequest.setUserId(monitorRequestDTO.getUserId());
         monitorRequest.setProjectId(monitorRequestDTO.getProjectId());
         monitorRequest.setUrl(monitorRequestDTO.getUrl());
         monitorRequest.setInterval(monitorRequestDTO.getInterval());
@@ -112,30 +113,36 @@ public class MonitorRequestService {
     }
 
     public void startMonitorfromMonitoringSites(WebSocketSession session) {
-        List<MonitoringSites> monitoringSites = monitoringSitesRepository.findAll();
+        List<MonitoringSites> monitoringSites = monitoringSitesRepository.findByStatus(Status.ACTIVE);
+
+        List<MonitoringSites> pausedSites = monitoringSitesRepository.findByStatus(Status.PAUSED);
+        for (MonitoringSites monitoringSite : pausedSites) {
+            pausedMonitorRequests.put(monitoringSite.getUrl().hashCode(), new MonitorRequestDTO(
+                    monitoringSite.getProjectId(), monitoringSite.getUrl(), monitoringSite.getInterval(), monitoringSite.getStatus()
+            ));
+        }
+
         if (jobs.isEmpty()) {
             for (MonitoringSites monitoringSite : monitoringSites) {
                 startMonitoring(new MonitorRequestDTO(
-                        1L,
                         monitoringSite.getProjectId(),
                         monitoringSite.getUrl(),
                         monitoringSite.getInterval(),
-                        monitoringSite.getStatus(),
-                        false
+                        monitoringSite.getStatus()
                 ), session);
             }
         }
     }
 
     public void startMonitoring(MonitorRequestDTO monitorRequestDTO, WebSocketSession session) {
-        MonitoringJobService job = new MonitoringJobService(monitorRequestDTO, session, monitoringLogRepository);
+        MonitoringJobService job = new MonitoringJobService(monitorRequestDTO, session, monitoringLogRepository, monitoringSitesRepository);
 
         if (!monitoringSitesRepository.existsByUrl(monitorRequestDTO.getUrl())) {
-            MonitoringSites monitoringSite = new MonitoringSites();
-            monitoringSite.setProjectId(monitorRequestDTO.getProjectId());
-            monitoringSite.setUrl(monitorRequestDTO.getUrl());
-            monitoringSite.setInterval(monitorRequestDTO.getInterval());
-            monitoringSite.setStatus(monitorRequestDTO.getStatus());
+            Status status = monitorRequestDTO.getStatus() != null
+                    ? monitorRequestDTO.getStatus() : Status.ACTIVE;
+            MonitoringSites monitoringSite = new MonitoringSites(
+                    null, monitorRequestDTO.getProjectId(), monitorRequestDTO.getUrl(), monitorRequestDTO.getInterval(), status
+            );
             monitoringSitesRepository.save(monitoringSite);
         }
 
@@ -188,6 +195,11 @@ public class MonitorRequestService {
 
     public void pauseMonitoring(MonitorRequestDTO monitorRequestDTO) {
         ScheduledFuture<?> future = jobs.get(monitorRequestDTO.getUrl().hashCode());
+
+        MonitoringSites monitoringSite = monitoringSitesRepository.findByUrl(monitorRequestDTO.getUrl());
+        monitoringSite.setStatus(Status.PAUSED);
+        monitoringSitesRepository.save(monitoringSite);
+
         pausedMonitorRequests.put(monitorRequestDTO.getUrl().hashCode(), monitorRequestDTO);
         pauseJobs.put(monitorRequestDTO.getUrl().hashCode(), future);
         jobs.remove(monitorRequestDTO.getUrl().hashCode());
@@ -247,10 +259,14 @@ public class MonitorRequestService {
         }
     }
 
-    // TODO: Implement When Stopped can't resume job
     public void resumeMonitoring(String url, WebSocketSession session) {
         MonitorRequestDTO pausedMonitorRequestDTO = pausedMonitorRequests.get(url.hashCode());
-        MonitoringJobService job = new MonitoringJobService(pausedMonitorRequestDTO, session, monitoringLogRepository);
+
+        MonitoringSites monitoringSite = monitoringSitesRepository.findByUrl(url);
+        monitoringSite.setStatus(Status.ACTIVE);
+        monitoringSitesRepository.save(monitoringSite);
+
+        MonitoringJobService job = new MonitoringJobService(pausedMonitorRequestDTO, session, monitoringLogRepository, monitoringSitesRepository);
 
         ScheduledFuture<?> future = schedular.scheduleAtFixedRate(
                 job, 0, pausedMonitorRequestDTO.getInterval().getInterval(), TimeUnit.SECONDS
@@ -259,5 +275,14 @@ public class MonitorRequestService {
         jobs.put(url.hashCode(), future);
         pausedMonitorRequests.remove(url.hashCode());
         pauseJobs.remove(url.hashCode());
+    }
+
+    public void manualPing(MonitorRequestDTO monitorRequestDTO, WebSocketSession session) throws IOException {
+        if (!jobs.containsKey(monitorRequestDTO.getUrl().hashCode())) {
+            session.sendMessage(new TextMessage("Website monitoring is not running for URL: " + monitorRequestDTO.getUrl()));
+            return;
+        }
+        MonitoringJobService job = new MonitoringJobService(monitorRequestDTO, session, monitoringLogRepository, monitoringSitesRepository);
+        job.run();
     }
 }

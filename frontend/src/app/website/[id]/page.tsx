@@ -10,7 +10,7 @@ import {
   useWebsiteLogs,
 } from "@/contexts/WebSocketContext";
 import { useStore } from "@/store/useStore";
-import { ArrowLeft, Pause, Play } from "lucide-react";
+import { ArrowLeft, SendHorizonalIcon } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect } from "react";
@@ -31,7 +31,7 @@ const intervalToNumber = (interval: string) => {
 export default function WebsiteDetails() {
   const { id } = useParams();
   const { websites, updateWebsiteCheck } = useStore();
-  const { sendMessage } = useWebSocketContext();
+  const { sendMessage, lastMessage } = useWebSocketContext();
   const logs = useWebsiteLogs(id as string);
 
   const website = websites.find((w) => w.id === id);
@@ -75,6 +75,27 @@ export default function WebsiteDetails() {
     }
   };
 
+  const handleManualPing = () => {
+    if (website) {
+      const message = {
+        action: "ping",
+        website: {
+          projectId: website.id,
+          url: website.url,
+          interval: website.interval,
+        },
+      };
+      const data = JSON.parse(lastMessage?.data);
+      const check = {
+        timestamp: new Date().toISOString(),
+        responseTime: data.responseTime,
+        statusCode: data.statusCode,
+      };
+      updateWebsiteCheck(data.projectId, check);
+      sendMessage(JSON.stringify(message));
+    }
+  };
+
   if (!website) {
     return <div>Website not found</div>;
   }
@@ -88,25 +109,52 @@ export default function WebsiteDetails() {
               <ArrowLeft className="mr-2 h-4 w-4" /> Back
             </Button>
           </Link>
-          <h1 className="text-3xl font-bold">{website.url}</h1>
+          <h1 className="text-2xl font-bold">
+            <Link
+              href={website.url}
+              target="_blank"
+              className="text-blue-500 hover:underline"
+            >
+              {website.url}
+            </Link>
+          </h1>
         </div>
-        {website.isActive ? (
-          <Button
+        <div className="flex items-center space-x-4">
+          {/* {website.isActive ? (
+            <Button
+              variant="outline"
+              onClick={handlePauseWebsite}
+              title="Pause Monitoring"
+            >
+              <Pause className="h-4 w-4" />
+            </Button>
+          ) : (
+            <Button
+              variant="outline"
+              onClick={handleResumeWebsite}
+              title="Resume Monitoring"
+            >
+              <Play className="h-4 w-4" />
+            </Button>
+          )} */}
+          {/* <Button
             variant="outline"
             onClick={handlePauseWebsite}
             title="Pause Monitoring"
           >
-            <Pause className="mr-2 h-4 w-4" /> Pause Monitoring
+            <Pause className="h-4 w-4" />
           </Button>
-        ) : (
           <Button
             variant="outline"
             onClick={handleResumeWebsite}
             title="Resume Monitoring"
           >
-            <Play className="mr-2 h-4 w-4" /> Resume Monitoring
+            <Play className="h-4 w-4" />
+          </Button> */}
+          <Button variant="outline" onClick={handleManualPing} title="Ping">
+            <SendHorizonalIcon className="h-4 w-4" />
           </Button>
-        )}
+        </div>
       </div>
       <p>
         Check interval: Every {intervalToNumber(website.interval)} second(s)
