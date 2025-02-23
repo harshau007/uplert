@@ -21,4 +21,4 @@
 ## Full Stack
 
 - [ ] External Platform Alerting e.g Email, Slack, Discord, SMS, etc
-- [ ] Implement emailing using Mailhog or other
+- [x] Implement emailing using Mailhog or other

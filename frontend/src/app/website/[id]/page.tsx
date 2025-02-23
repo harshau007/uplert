@@ -48,32 +48,32 @@ export default function WebsiteDetails() {
     }
   }, [logs, id, updateWebsiteCheck]);
 
-  const handlePauseWebsite = () => {
-    if (website) {
-      const message = {
-        action: "pause",
-        website: {
-          userId: 1,
-          projectId: website.id,
-          url: website.url,
-          interval: website.interval,
-        },
-      };
-      sendMessage(JSON.stringify(message));
-    }
-  };
+  // const handlePauseWebsite = () => {
+  //   if (website) {
+  //     const message = {
+  //       action: "pause",
+  //       website: {
+  //         userId: 1,
+  //         projectId: website.id,
+  //         url: website.url,
+  //         interval: website.interval,
+  //       },
+  //     };
+  //     sendMessage(JSON.stringify(message));
+  //   }
+  // };
 
-  const handleResumeWebsite = () => {
-    if (website) {
-      const message = {
-        action: "resume",
-        website: {
-          url: website.url,
-        },
-      };
-      sendMessage(JSON.stringify(message));
-    }
-  };
+  // const handleResumeWebsite = () => {
+  //   if (website) {
+  //     const message = {
+  //       action: "resume",
+  //       website: {
+  //         url: website.url,
+  //       },
+  //     };
+  //     sendMessage(JSON.stringify(message));
+  //   }
+  // };
 
   const handleManualPing = () => {
     if (website) {

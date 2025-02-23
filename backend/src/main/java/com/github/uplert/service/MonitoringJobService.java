@@ -2,6 +2,7 @@ package com.github.uplert.service;
 
 import com.github.uplert.domain.MonitoringLog;
 import com.github.uplert.domain.MonitoringSites;
+import com.github.uplert.model.EmailDetails;
 import com.github.uplert.model.MonitorRequestDTO;
 import com.github.uplert.repos.MonitoringLogRepository;
 import com.github.uplert.repos.MonitoringSitesRepository;
@@ -20,12 +21,14 @@ public class MonitoringJobService implements Runnable{
     private final WebSocketSession session;
     private final MonitoringLogRepository monitoringLogRepository;
     private final MonitoringSitesRepository monitoringSitesRepository;
+    private final EmailServiceImpl emailService;
 
     public MonitoringJobService(MonitorRequestDTO website, WebSocketSession session, MonitoringLogRepository monitoringLogRepository, MonitoringSitesRepository monitoringSitesRepository) {
         this.website = website;
         this.session = session;
         this.monitoringLogRepository = monitoringLogRepository;
         this.monitoringSitesRepository = monitoringSitesRepository;
+        this.emailService = new EmailServiceImpl();
     }
 
     @Override
@@ -56,7 +59,11 @@ public class MonitoringJobService implements Runnable{
             MonitoringSites monitoringSites = monitoringSitesRepository.findByUrl(website.getUrl());
 
             System.out.println("Status: "+ monitoringSites.getStatus());
-
+            System.out.println("Status Code: "+ statusCode);
+            if (statusCode != 200) {
+                EmailDetails emailDetails = getEmailDetails(responseTime, statusCode);
+                emailService.sendEmail(emailDetails);
+            }
             String logMessage = String.format(
                     "{\"website\":\"%s\",\"projectId\":\"%s\",\"status\":\"%s\",\"responseTime\":%d,\"statusCode\":%d}",
                     website.getUrl(), monitoringSites.getProjectId(), monitoringSites.getStatus(),responseTime, statusCode
@@ -70,6 +77,15 @@ public class MonitoringJobService implements Runnable{
                 ex.printStackTrace();
             }
         }
+    }
+
+    private EmailDetails getEmailDetails(long responseTime, int statusCode) {
+        EmailDetails emailDetails = new EmailDetails();
+        emailDetails.setSubject("Urgent: Your Website Is Down – Immediate Action Required");
+        EmailDetails.BodyData bodyData = new EmailDetails.BodyData("" + responseTime, website.getUrl(), "" + statusCode);
+        emailDetails.setMsgBody(bodyData);
+        emailDetails.setRecipient("upadhyayharsh533@gmail.com");
+        return emailDetails;
     }
 
     public void notifyUser(String message) {
