@@ -11,6 +11,7 @@ import com.github.uplert.model.Status;
 import com.github.uplert.repos.MonitorRequestRepository;
 import com.github.uplert.repos.MonitoringLogRepository;
 import com.github.uplert.repos.MonitoringSitesRepository;
+import com.github.uplert.repos.UserRepository;
 import com.github.uplert.util.NotFoundException;
 
 import java.io.IOException;
@@ -33,16 +34,18 @@ public class MonitorRequestService {
     private final MonitorRequestRepository monitorRequestRepository;
     private final MonitoringSitesRepository monitoringSitesRepository;
     private final MonitoringLogRepository monitoringLogRepository;
+    private final UserRepository userRepository;
     private final ScheduledExecutorService schedular = Executors.newScheduledThreadPool(10);
     private final Map<Integer, ScheduledFuture<?>> jobs = new ConcurrentHashMap<>();
     private final Map<Integer, ScheduledFuture<?>> pauseJobs = new ConcurrentHashMap<>();
     private final Map<Integer, MonitorRequestDTO> pausedMonitorRequests = new ConcurrentHashMap<>();
     private final ObjectMapper objectMapper;
 
-    public MonitorRequestService(final MonitorRequestRepository monitorRequestRepository, MonitoringSitesRepository monitoringSitesRepository, MonitoringLogRepository monitoringLogRepository, ObjectMapper objectMapper) {
+    public MonitorRequestService(final MonitorRequestRepository monitorRequestRepository, MonitoringSitesRepository monitoringSitesRepository, MonitoringLogRepository monitoringLogRepository, UserRepository userRepository, ObjectMapper objectMapper) {
         this.monitorRequestRepository = monitorRequestRepository;
         this.monitoringSitesRepository = monitoringSitesRepository;
         this.monitoringLogRepository = monitoringLogRepository;
+        this.userRepository = userRepository;
         this.objectMapper = objectMapper;
     }
 
@@ -135,7 +138,7 @@ public class MonitorRequestService {
     }
 
     public void startMonitoring(MonitorRequestDTO monitorRequestDTO, WebSocketSession session) {
-        MonitoringJobService job = new MonitoringJobService(monitorRequestDTO, session, monitoringLogRepository, monitoringSitesRepository);
+        MonitoringJobService job = new MonitoringJobService(monitorRequestDTO, session, monitoringLogRepository, monitoringSitesRepository, userRepository);
 
         if (!monitoringSitesRepository.existsByUrl(monitorRequestDTO.getUrl())) {
             Status status = monitorRequestDTO.getStatus() != null
@@ -266,7 +269,7 @@ public class MonitorRequestService {
         monitoringSite.setStatus(Status.ACTIVE);
         monitoringSitesRepository.save(monitoringSite);
 
-        MonitoringJobService job = new MonitoringJobService(pausedMonitorRequestDTO, session, monitoringLogRepository, monitoringSitesRepository);
+        MonitoringJobService job = new MonitoringJobService(pausedMonitorRequestDTO, session, monitoringLogRepository, monitoringSitesRepository, userRepository);
 
         ScheduledFuture<?> future = schedular.scheduleAtFixedRate(
                 job, 0, pausedMonitorRequestDTO.getInterval().getInterval(), TimeUnit.SECONDS
@@ -282,7 +285,7 @@ public class MonitorRequestService {
             session.sendMessage(new TextMessage("Website monitoring is not running for URL: " + monitorRequestDTO.getUrl()));
             return;
         }
-        MonitoringJobService job = new MonitoringJobService(monitorRequestDTO, session, monitoringLogRepository, monitoringSitesRepository);
+        MonitoringJobService job = new MonitoringJobService(monitorRequestDTO, session, monitoringLogRepository, monitoringSitesRepository, userRepository);
         job.run();
     }
 }

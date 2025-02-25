@@ -4,6 +4,8 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.List;
+
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
@@ -17,7 +19,7 @@ public class EmailDetails {
         private String url;
         private String statusCode;
     }
-    private String recipient;
+    private List<String> recipients;
     private BodyData msgBody;
     private String subject;
     private String attachment;

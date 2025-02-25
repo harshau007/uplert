@@ -1,7 +1,7 @@
 "use client";
 
 import { cn } from "@/lib/utils";
-import { Home } from "lucide-react";
+import { Home, Settings } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
@@ -25,6 +25,16 @@ export function AppSidebar() {
         >
           <Home size={16} />
           <span>Dashboard</span>
+        </Link>
+        <Link
+          href="/settings"
+          className={cn(
+            "flex items-center space-x-2 px-2 py-1.5 rounded-md hover:bg-accent",
+            pathname === "/settings" && "bg-accent"
+          )}
+        >
+          <Settings size={16} />
+          <span>Settings</span>
         </Link>
       </nav>
     </aside>

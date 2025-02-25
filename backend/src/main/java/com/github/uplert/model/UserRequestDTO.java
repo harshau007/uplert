@@ -6,6 +6,5 @@ import lombok.Setter;
 @Getter
 @Setter
 public class UserRequestDTO {
-    private Long id;
-    private String username;
+    private String[] emails;
 }

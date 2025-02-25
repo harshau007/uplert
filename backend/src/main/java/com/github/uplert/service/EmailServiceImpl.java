@@ -5,6 +5,8 @@ import org.springframework.stereotype.Service;
 
 import jakarta.mail.*;
 import jakarta.mail.internet.*;
+
+import java.util.List;
 import java.util.Properties;
 
 @Service
@@ -27,19 +29,20 @@ public class EmailServiceImpl implements EmailService{
                         }
                     });
 
-            sendEmail(session, "amanupadhyay2004@gmail.com", details.getRecipient(), details.getSubject(), details.getMsgBody());
+            sendEmail(session, "amanupadhyay2004@gmail.com", details.getRecipients(), details.getSubject(), details.getMsgBody());
             return "Email Sent Successfully";
         } catch (Exception e) {
             System.out.println(e.getMessage());
             return "Error while Sending Mail";
         }
     }
-    public static void sendEmail(Session session, String fromEmail, String toEmail, String subject, EmailDetails.BodyData body){
+    public static void sendEmail(Session session, String fromEmail, List<String> toEmail, String subject, EmailDetails.BodyData body){
         try
         {
             Message message = new MimeMessage(session);
             message.setFrom(new InternetAddress(fromEmail, "Uplert"));
-            message.setRecipient(Message.RecipientType.TO, new InternetAddress(toEmail));
+//            message.setRecipient(Message.RecipientType.TO, new InternetAddress(toEmail));
+            message.addRecipients(Message.RecipientType.TO, InternetAddress.parse(String.join(", ", toEmail)));
             message.setSubject(subject);
             message.setContent(body, "text/html; charset=utf-8");
             String htmlContent = "<!DOCTYPE html>"
