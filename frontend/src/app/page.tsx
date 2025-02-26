@@ -208,7 +208,7 @@ export default function Dashboard() {
                             </span>
                           </TableCell>
                           <TableCell>
-                            {intervalToNumber(website.interval)} SEC
+                            {intervalToNumber(website.interval)} min
                           </TableCell>
                           <TableCell>
                             <Button

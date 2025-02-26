@@ -7,4 +7,6 @@ import lombok.Setter;
 @Setter
 public class UserRequestDTO {
     private String[] emails;
+    private String fromEmail;
+    private String appPassword;
 }

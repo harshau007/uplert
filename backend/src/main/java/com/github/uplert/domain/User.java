@@ -20,6 +20,10 @@ public class User {
 
     private List<String> emails;
 
+    private String fromEmail;
+
+    private String appPassword;
+
     @CreatedDate
     private OffsetDateTime dateCreated;
 

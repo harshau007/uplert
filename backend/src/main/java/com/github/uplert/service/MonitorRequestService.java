@@ -150,7 +150,7 @@ public class MonitorRequestService {
         }
 
         ScheduledFuture<?> future = schedular.scheduleAtFixedRate(
-                job, 0, monitorRequestDTO.getInterval().getInterval(), TimeUnit.SECONDS
+                job, 0, monitorRequestDTO.getInterval().getInterval(), TimeUnit.MINUTES
         );
         jobs.put(monitorRequestDTO.getUrl().hashCode(), future);
     }
@@ -272,7 +272,7 @@ public class MonitorRequestService {
         MonitoringJobService job = new MonitoringJobService(pausedMonitorRequestDTO, session, monitoringLogRepository, monitoringSitesRepository, userRepository);
 
         ScheduledFuture<?> future = schedular.scheduleAtFixedRate(
-                job, 0, pausedMonitorRequestDTO.getInterval().getInterval(), TimeUnit.SECONDS
+                job, 0, pausedMonitorRequestDTO.getInterval().getInterval(), TimeUnit.MINUTES
         );
 
         jobs.put(url.hashCode(), future);

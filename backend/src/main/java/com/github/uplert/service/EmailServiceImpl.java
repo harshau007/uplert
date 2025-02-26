@@ -1,6 +1,10 @@
 package com.github.uplert.service;
 
+import com.github.uplert.config.SingleUserInitializer;
+import com.github.uplert.domain.User;
 import com.github.uplert.model.EmailDetails;
+import com.github.uplert.repos.UserRepository;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 import jakarta.mail.*;
@@ -11,9 +15,18 @@ import java.util.Properties;
 
 @Service
 public class EmailServiceImpl implements EmailService{
+    private final UserRepository userRepository;
+
+    public EmailServiceImpl(UserRepository userRepository) {
+        this.userRepository = userRepository;
+    }
+
     @Override
     public String sendEmail(EmailDetails details) {
         try {
+            User user = userRepository.findById(SingleUserInitializer.SINGLE_USER_ID).orElse(null);
+
+            if (user == null) System.out.println("User not found");
             System.out.println("TLSEmail Start");
             Properties props = new Properties();
             props.put("mail.smtp.host", "smtp.gmail.com");
@@ -25,11 +38,13 @@ public class EmailServiceImpl implements EmailService{
                     new Authenticator() {
                         @Override
                         protected PasswordAuthentication getPasswordAuthentication() {
-                            return new PasswordAuthentication("amanupadhyay2004@gmail.com", "");
+                            assert user != null;
+                            return new PasswordAuthentication(user.getFromEmail(), user.getAppPassword());
                         }
                     });
 
-            sendEmail(session, "amanupadhyay2004@gmail.com", details.getRecipients(), details.getSubject(), details.getMsgBody());
+            assert user != null;
+            sendEmail(session, user.getFromEmail(), details.getRecipients(), details.getSubject(), details.getMsgBody());
             return "Email Sent Successfully";
         } catch (Exception e) {
             System.out.println(e.getMessage());

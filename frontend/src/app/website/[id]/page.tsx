@@ -85,7 +85,9 @@ export default function WebsiteDetails() {
           interval: website.interval,
         },
       };
+      console.log(lastMessage?.data);
       const data = JSON.parse(lastMessage?.data);
+      console.log(data);
       const check = {
         timestamp: new Date().toISOString(),
         responseTime: data.responseTime,
@@ -156,9 +158,7 @@ export default function WebsiteDetails() {
           </Button>
         </div>
       </div>
-      <p>
-        Check interval: Every {intervalToNumber(website.interval)} second(s)
-      </p>
+      <p>Check interval: Every {intervalToNumber(website.interval)} minutes</p>
       <StatusTimeline checks={website.checks} />
 
       <StatsGrid checks={website.checks} />

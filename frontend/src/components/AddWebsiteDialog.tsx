@@ -30,13 +30,13 @@ export default function AddWebsiteDialog({
   onAdd,
 }: AddWebsiteDialogProps) {
   const [url, setUrl] = useState("");
-  const [interval, setInterval] = useState("THIRTY");
+  const [selectedInterval, setSelectedInterval] = useState("THIRTY");
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onAdd(url, interval);
+    onAdd(url, selectedInterval);
     setUrl("");
-    setInterval("THIRTY");
+    setSelectedInterval("THIRTY");
     onOpenChange(false);
   };
 
@@ -60,14 +60,17 @@ export default function AddWebsiteDialog({
           </div>
           <div className="space-y-2">
             <Label htmlFor="interval">Interval</Label>
-            <Select value={interval} onValueChange={setInterval}>
+            <Select
+              defaultValue="THIRTY"
+              onValueChange={(value) => setSelectedInterval(value)}
+            >
               <SelectTrigger>
                 <SelectValue placeholder="Select interval" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="TEN">10 Seconds</SelectItem>
-                <SelectItem value="THIRTY">30 Seconds</SelectItem>
-                <SelectItem value="SIXTY">60 Seconds</SelectItem>
+                <SelectItem value="TEN">10 Minutes</SelectItem>
+                <SelectItem value="THIRTY">30 Minutes</SelectItem>
+                <SelectItem value="SIXTY">60 Minutes</SelectItem>
               </SelectContent>
             </Select>
           </div>

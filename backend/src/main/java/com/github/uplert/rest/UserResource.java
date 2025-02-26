@@ -33,6 +33,8 @@ public class UserResource {
 
         resp.put("message", "Hello World");
         resp.put("emails", user.getEmails());
+        resp.put("fromEmail", user.getFromEmail());
+        resp.put("appPassword", user.getAppPassword());
         return ResponseEntity.ok(resp);
     }
 
@@ -49,6 +51,8 @@ public class UserResource {
 
         System.out.println(reqBody);
         user.setEmails(Arrays.asList(reqBody.getEmails()));
+        user.setFromEmail(reqBody.getFromEmail());
+        user.setAppPassword(reqBody.getAppPassword());
         userRepository.save(user);
 
         resp.put("message", "User updated successfully");

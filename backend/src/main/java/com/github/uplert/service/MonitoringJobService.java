@@ -33,7 +33,7 @@ public class MonitoringJobService implements Runnable{
         this.monitoringLogRepository = monitoringLogRepository;
         this.monitoringSitesRepository = monitoringSitesRepository;
         this.userRepository = userRepository;
-        this.emailService = new EmailServiceImpl();
+        this.emailService = new EmailServiceImpl(userRepository);
     }
 
     @Override
